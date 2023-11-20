@@ -25,13 +25,13 @@ impl Default for Input {
     }
 }
 
-pub struct Ugui {
+pub struct Ugui<T: Styler> {
     pub current_input: Input,
     pub last_input: Input,
-    pub styler: Box<dyn Styler>,
+    pub styler: T,
 }
 
-impl Ugui {
+impl<T: Styler> Ugui<T> {
     pub fn button(&mut self, control: Control, button: Button) -> bool {
         self.styler.button(control, button);
         true

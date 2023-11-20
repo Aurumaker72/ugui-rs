@@ -33,7 +33,7 @@ pub fn main() -> Result<(), String> {
     let mut ugui = Ugui {
         current_input: Default::default(),
         last_input: Default::default(),
-        styler: Box::new(StandardStyler::new(canvas, &ttf_context)),
+        styler: StandardStyler::new(canvas, &ttf_context),
     };
 
     'running: loop {
