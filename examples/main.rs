@@ -3,6 +3,8 @@ extern crate sdl2;
 use core::default::Default;
 use sdl2::event::Event;
 use sdl2::sys::SDL_tan;
+use std::path::Path;
+use std::rc::Rc;
 use ugui::control::{Button, Control};
 use ugui::standard_styler::StandardStyler;
 use ugui::*;
@@ -11,6 +13,7 @@ pub fn main() -> Result<(), String> {
     let sdl_context = sdl2::init()?;
     let video_subsystem = sdl_context.video()?;
     let ttf_context = sdl2::ttf::init().map_err(|e| e.to_string())?;
+
 
     let window = video_subsystem
         .window("Test", 640, 480)
@@ -30,7 +33,7 @@ pub fn main() -> Result<(), String> {
     let mut ugui = Ugui {
         current_input: Default::default(),
         last_input: Default::default(),
-        styler: Box::new(StandardStyler { canvas }),
+        styler: Box::new(StandardStyler::new(canvas, &ttf_context)),
     };
 
     'running: loop {
@@ -59,18 +62,6 @@ pub fn main() -> Result<(), String> {
         );
 
         ugui.end();
-
-        //
-        // let rect = Rect::new(
-        //     event_pump.mouse_state().x(),
-        //     event_pump.mouse_state().y(),
-        //     100,
-        //     100,
-        // );
-        // canvas.set_draw_color(Color::RGB(255, 255, 255));
-        // canvas.draw_rect(rect).unwrap();
-        // canvas.fill_rect(rect).unwrap();
-        // canvas.present();
     }
 
     Ok(())
