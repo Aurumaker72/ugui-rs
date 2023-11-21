@@ -1,4 +1,3 @@
-use crate::geo::Rect;
 use crate::*;
 
 pub trait Styler {

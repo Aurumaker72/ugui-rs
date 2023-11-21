@@ -5,27 +5,16 @@ pub mod standard_styler;
 pub mod styler;
 
 use crate::control::{Button, Control, Listbox, Scrollbar};
-use crate::geo::{Point, Rect};
+use crate::geo::Point;
 use crate::input::Input;
 use crate::styler::Styler;
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Default)]
 pub struct PersistentState {
     active_control: Option<i64>,
     current_input: Input,
     last_input: Input,
     mouse_down_position: Point,
-}
-
-impl Default for PersistentState {
-    fn default() -> Self {
-        Self {
-            active_control: None,
-            current_input: Default::default(),
-            last_input: Default::default(),
-            mouse_down_position: Default::default(),
-        }
-    }
 }
 
 pub struct Ugui<T: Styler> {
@@ -50,7 +39,7 @@ impl<T: Styler> Ugui<T> {
             return true;
         }
 
-        return false;
+        false
     }
     pub fn button(&mut self, control: Control, button: Button) -> bool {
         let pushed = self.process_push(control);
@@ -59,7 +48,7 @@ impl<T: Styler> Ugui<T> {
     }
     pub fn scrollbar(&mut self, control: Control, scrollbar: Scrollbar) -> f32 {
         let pushed = self.process_push(control);
-        let mut value = scrollbar.value;
+        let value = scrollbar.value;
 
         if pushed
             || self
@@ -67,7 +56,7 @@ impl<T: Styler> Ugui<T> {
                 .active_control
                 .is_some_and(|x| x == control.uid)
         {
-            let relative_mouse = self
+            let _relative_mouse = self
                 .persistent_state
                 .current_input
                 .mouse_position

@@ -2,11 +2,10 @@ use crate::control::{Button, Control, Listbox, Scrollbar};
 use crate::geo::{remap, Point, Rect};
 use crate::standard_styler::VisualState::{Active, Disabled, Hover, Normal};
 use crate::styler::Styler;
-use crate::{Input, PersistentState};
-use sdl2::keyboard::Keycode::KpMemAdd;
-use sdl2::libc::commit;
+use crate::PersistentState;
+
 use sdl2::pixels::Color;
-use sdl2::rect::Point as SdlPoint;
+
 use sdl2::rect::Rect as SdlRect;
 use sdl2::render::WindowCanvas;
 use sdl2::ttf::{Font, Sdl2TtfContext};
@@ -127,7 +126,7 @@ impl<'a> StandardStyler<'a> {
             return Active;
         }
 
-        return Normal;
+        Normal
     }
 
     fn listbox_item(&mut self, control: Control, listbox: Listbox, index: usize, item: &str) {
@@ -257,7 +256,7 @@ impl<'a> Styler for StandardStyler<'a> {
     fn listbox(&mut self, control: Control, listbox: Listbox) {
         let back_color = Color::RGB(255, 255, 255);
         let border_color = Color::RGB(130, 135, 144);
-        let visual_state = self.get_visual_state(control);
+        let _visual_state = self.get_visual_state(control);
 
         self.canvas.set_draw_color(border_color);
         self.canvas.fill_rect(control.rect.to_sdl()).unwrap();
@@ -279,7 +278,7 @@ impl<'a> Styler for StandardStyler<'a> {
 
     fn listbox_index_at_point(
         &mut self,
-        control: Control,
+        _control: Control,
         listbox: Listbox,
         point: Point,
     ) -> Option<usize> {
@@ -288,6 +287,6 @@ impl<'a> Styler for StandardStyler<'a> {
         }
         let index = (point.y / listbox_item_height).floor() as usize;
 
-        return Some(index.clamp(0, listbox.items.len() - 1));
+        Some(index.clamp(0, listbox.items.len() - 1))
     }
 }
