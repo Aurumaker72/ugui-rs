@@ -8,13 +8,21 @@ use crate::control::{Button, Control, Listbox, Scrollbar};
 use crate::geo::Point;
 use crate::input::Input;
 use crate::styler::Styler;
+use std::collections::HashMap;
 
+// state for all types of controls flattened into one struct
 #[derive(Copy, Clone, Default)]
+struct PersistentControlState {
+    scrollbar_start_value: f32,
+}
+
+#[derive(Clone, Default)]
 pub struct PersistentState {
     active_control: Option<i64>,
     current_input: Input,
     last_input: Input,
     mouse_down_position: Point,
+    control_state: HashMap<i64, PersistentControlState>,
 }
 
 pub struct Ugui<T: Styler> {
@@ -48,7 +56,7 @@ impl<T: Styler> Ugui<T> {
     }
     pub fn scrollbar(&mut self, control: Control, scrollbar: Scrollbar) -> f32 {
         let pushed = self.process_push(control);
-        let value = scrollbar.value;
+        let mut value = scrollbar.value;
 
         if pushed
             || self
@@ -56,18 +64,27 @@ impl<T: Styler> Ugui<T> {
                 .active_control
                 .is_some_and(|x| x == control.uid)
         {
-            let _relative_mouse = self
+            let relative_mouse = self
                 .persistent_state
                 .current_input
                 .mouse_position
                 .sub(control.rect.top_left());
+            let relative_mouse_down = self
+                .persistent_state
+                .mouse_down_position
+                .sub(control.rect.top_left());
+
+            let current = relative_mouse.y / control.rect.h;
+            let start = relative_mouse_down.y / control.rect.h;
+            value = start + (current - start);
         }
         self.styler.scrollbar(control, scrollbar);
-        value
+        value.clamp(0.0, 1.0)
     }
     pub fn listbox(&mut self, control: Control, listbox: Listbox) -> Option<usize> {
         let pushed = self.process_push(control);
         let mut index = listbox.index;
+
         if pushed
             || self
                 .persistent_state
@@ -83,6 +100,7 @@ impl<T: Styler> Ugui<T> {
                     .sub(control.rect.top_left()),
             );
         }
+
         self.styler.listbox(control, listbox);
         index
     }
@@ -91,12 +109,14 @@ impl<T: Styler> Ugui<T> {
         self.persistent_state.last_input = self.persistent_state.current_input;
         self.persistent_state.current_input = input;
 
-        if input.primary_down && !self.persistent_state.last_input.primary_down {
+        if self.persistent_state.current_input.primary_down
+            && !self.persistent_state.last_input.primary_down
+        {
             self.persistent_state.mouse_down_position =
                 self.persistent_state.current_input.mouse_position;
         }
 
-        self.styler.begin(self.persistent_state);
+        self.styler.begin(self.persistent_state.clone());
     }
 
     pub fn end(&mut self) {

@@ -30,6 +30,7 @@ pub fn main() -> Result<(), String> {
         persistent_state: Default::default(),
     };
 
+    let mut mouse_wheel = 0;
     let mut value = 0.0;
     let mut index = Some(0);
     let mut items = vec![
@@ -44,6 +45,9 @@ pub fn main() -> Result<(), String> {
         for event in event_pump.poll_iter() {
             match event {
                 Event::Quit { .. } => break 'running,
+                Event::MouseWheel { y, .. } => {
+                    mouse_wheel = y as i8;
+                }
                 _ => {}
             }
         }
@@ -53,8 +57,10 @@ pub fn main() -> Result<(), String> {
                 x: event_pump.mouse_state().x() as f32,
                 y: event_pump.mouse_state().y() as f32,
             },
+            mouse_wheel,
             primary_down: event_pump.mouse_state().left(),
         });
+        mouse_wheel = 0;
 
         if ugui.button(
             Control {
