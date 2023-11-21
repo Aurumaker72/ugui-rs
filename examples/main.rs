@@ -3,7 +3,7 @@ extern crate sdl2;
 use core::default::Default;
 use sdl2::event::Event;
 use std::ops::Deref;
-use ugui::control::{Button, Control, ListBox};
+use ugui::control::{Button, Control, Listbox, Scrollbar};
 use ugui::geo::Point;
 use ugui::input::Input;
 use ugui::standard_styler::StandardStyler;
@@ -30,6 +30,7 @@ pub fn main() -> Result<(), String> {
         persistent_state: Default::default(),
     };
 
+    let mut value = 0.0;
     let mut index = Some(0);
     let mut items = vec![
         "Item", "Item", "Item", "Item", "Item", "Item", "Item", "Item", "Item", "Item", "Item",
@@ -74,10 +75,19 @@ pub fn main() -> Result<(), String> {
                 enabled: true,
                 rect: geo::Rect::new(60.0, 80.0, 200.0, 350.0),
             },
-            ListBox {
+            Listbox {
                 items: &items,
                 index,
             },
+        );
+
+        value = ugui.scrollbar(
+            Control {
+                uid: 2,
+                enabled: true,
+                rect: geo::Rect::new(300.0, 80.0, 16.0, 350.0),
+            },
+            Scrollbar { value, ratio: 1.5 },
         );
 
         ugui.end();

@@ -85,3 +85,7 @@ impl Rect {
         SdlRect::new(self.x as i32, self.y as i32, self.w as u32, self.h as u32)
     }
 }
+
+pub fn remap(value: f32, from1: f32, to1: f32, from2: f32, to2: f32) -> f32 {
+    (value - from1) / (to1 - from1) * (to2 - from2) + from2
+}

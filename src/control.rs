@@ -13,7 +13,13 @@ pub struct Button<'a> {
 }
 
 #[derive(Copy, Clone)]
-pub struct ListBox<'a> {
+pub struct Scrollbar {
+    pub value: f32,
+    pub ratio: f32,
+}
+
+#[derive(Copy, Clone)]
+pub struct Listbox<'a> {
     pub items: &'a Vec<&'a str>,
     pub index: Option<usize>,
 }

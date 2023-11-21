@@ -1,5 +1,5 @@
-use crate::control::{Button, Control, ListBox};
-use crate::geo::{Point, Rect};
+use crate::control::{Button, Control, Listbox, Scrollbar};
+use crate::geo::{remap, Point, Rect};
 use crate::standard_styler::VisualState::{Active, Disabled, Hover, Normal};
 use crate::styler::Styler;
 use crate::{Input, PersistentState};
@@ -130,7 +130,7 @@ impl<'a> StandardStyler<'a> {
         return Normal;
     }
 
-    fn listbox_item(&mut self, control: Control, listbox: ListBox, index: usize, item: &str) {
+    fn listbox_item(&mut self, control: Control, listbox: Listbox, index: usize, item: &str) {
         let mut back_color = Color::WHITE;
         let mut text_color = Color::BLACK;
 
@@ -162,13 +162,34 @@ impl<'a> StandardStyler<'a> {
             Alignment::Center,
         );
     }
+
+    fn scrollbar_get_thumb(control: Control, scrollbar: Scrollbar) -> Rect {
+        let scrollbar_height = control.rect.h * (1.0 / scrollbar.ratio);
+        let scrollbar_y = remap(
+            scrollbar.value,
+            0.0,
+            1.0,
+            0.0,
+            control.rect.h - scrollbar_height,
+        );
+
+        Rect {
+            x: control.rect.x,
+            y: control.rect.y + scrollbar_y,
+            w: control.rect.w,
+            h: scrollbar_height,
+        }
+    }
 }
 
 impl<'a> Styler for StandardStyler<'a> {
     fn begin(&mut self, persistent_state: PersistentState) {
         self.persistent_state = persistent_state;
-        self.canvas.set_draw_color(Color::RGB(240, 240, 240));
+        self.canvas.set_draw_color(Color::RGB(253, 253, 253));
         self.canvas.clear();
+    }
+    fn end(&mut self) {
+        self.canvas.present();
     }
 
     fn button(&mut self, control: Control, button: Button) {
@@ -207,7 +228,33 @@ impl<'a> Styler for StandardStyler<'a> {
         );
     }
 
-    fn listbox(&mut self, control: Control, listbox: ListBox) {
+    fn scrollbar(&mut self, control: Control, scrollbar: Scrollbar) {
+        let back_color = Color::RGB(240, 240, 240);
+        let mut thumb_color = Color::RGB(205, 205, 205);
+        let thumb_rect = StandardStyler::scrollbar_get_thumb(control, scrollbar);
+
+        // We need visual state of thumb, not scrollbar, since thats the interactable part
+        let visual_state = self.get_visual_state(Control {
+            rect: thumb_rect,
+            ..control
+        });
+
+        if visual_state == Hover {
+            thumb_color = Color::RGB(166, 166, 166);
+        } else if visual_state == Active {
+            thumb_color = Color::RGB(96, 96, 96);
+        } else if visual_state == Disabled {
+            thumb_color = Color::RGB(192, 192, 192);
+        }
+
+        self.canvas.set_draw_color(back_color);
+        self.canvas.fill_rect(control.rect.to_sdl()).unwrap();
+
+        self.canvas.set_draw_color(thumb_color);
+        self.canvas.fill_rect(thumb_rect.to_sdl()).unwrap();
+    }
+
+    fn listbox(&mut self, control: Control, listbox: Listbox) {
         let back_color = Color::RGB(255, 255, 255);
         let border_color = Color::RGB(130, 135, 144);
         let visual_state = self.get_visual_state(control);
@@ -233,7 +280,7 @@ impl<'a> Styler for StandardStyler<'a> {
     fn listbox_index_at_point(
         &mut self,
         control: Control,
-        listbox: ListBox,
+        listbox: Listbox,
         point: Point,
     ) -> Option<usize> {
         if listbox.items.is_empty() {
@@ -242,9 +289,5 @@ impl<'a> Styler for StandardStyler<'a> {
         let index = (point.y / listbox_item_height).floor() as usize;
 
         return Some(index.clamp(0, listbox.items.len() - 1));
-    }
-
-    fn end(&mut self) {
-        self.canvas.present();
     }
 }
