@@ -5,6 +5,7 @@ use crate::styler::Styler;
 use crate::{Input, PersistentState};
 use sdl2::pixels::Color;
 use sdl2::rect::Point as SdlPoint;
+use sdl2::rect::Rect as SdlRect;
 use sdl2::render::WindowCanvas;
 use sdl2::ttf::{Font, Sdl2TtfContext};
 use std::path::Path;
@@ -24,6 +25,13 @@ enum VisualState {
     Disabled,
 }
 
+#[derive(Eq, PartialEq)]
+enum Alignment {
+    Start,
+    Center,
+    End,
+}
+
 impl<'a> StandardStyler<'a> {
     pub fn new(canvas: WindowCanvas, ttf_context: &'a Sdl2TtfContext) -> Self {
         let font = ttf_context
@@ -36,6 +44,54 @@ impl<'a> StandardStyler<'a> {
             ttf_context,
             font,
         }
+    }
+
+    fn draw_text(
+        &mut self,
+        text: &str,
+        rect: SdlRect,
+        color: Color,
+        horizontal_alignment: Alignment,
+        vertical_alignment: Alignment,
+    ) {
+        let texture_creator = self.canvas.texture_creator();
+
+        let surface = self
+            .font
+            .render(text)
+            .blended(color)
+            .map_err(|e| e.to_string())
+            .unwrap();
+
+        let texture = texture_creator
+            .create_texture_from_surface(&surface)
+            .map_err(|e| e.to_string())
+            .unwrap();
+
+        let text_rect = self.font.size_of(text).unwrap();
+
+        let mut computed_rect = SdlRect::new(rect.x, rect.y, text_rect.0, text_rect.1);
+
+        if horizontal_alignment == Alignment::End {
+            computed_rect.x = rect.x + rect.w - text_rect.0 as i32;
+        }
+        if horizontal_alignment == Alignment::Center {
+            computed_rect.x = rect.x + rect.w / 2 - text_rect.0 as i32 / 2;
+        }
+        if vertical_alignment == Alignment::End {
+            computed_rect.y = rect.y + rect.h - text_rect.1 as i32;
+        }
+        if vertical_alignment == Alignment::Center {
+            computed_rect.y = rect.y + rect.h / 2 - text_rect.1 as i32 / 2;
+        }
+
+        self.canvas
+            .copy(
+                &texture,
+                None,
+                Some(computed_rect),
+            )
+            .unwrap();
     }
 
     fn get_visual_state(&mut self, control: Control) -> VisualState {
@@ -108,6 +164,13 @@ impl<'a> Styler for StandardStyler<'a> {
         self.canvas
             .fill_rect(control.rect.inflate(-1.0).to_sdl())
             .unwrap();
+        self.draw_text(
+            button.text,
+            control.rect.to_sdl(),
+            Color::BLACK,
+            Alignment::Center,
+            Alignment::Center,
+        );
     }
 
     fn end(&mut self) {
