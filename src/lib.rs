@@ -34,9 +34,28 @@ pub struct Ugui<T: Styler> {
 }
 
 impl<T: Styler> Ugui<T> {
+    fn process_push(&mut self, control: Control) -> bool {
+        if !control.enabled {
+            return false;
+        }
+
+        if self.persistent_state.current_input.primary_down
+            && !self.persistent_state.last_input.primary_down
+            && self
+                .persistent_state
+                .mouse_down_position
+                .inside(control.rect)
+        {
+            self.persistent_state.active_control = Some(control.uid);
+            return true;
+        }
+
+        return false;
+    }
     pub fn button(&mut self, control: Control, button: Button) -> bool {
+        let pushed = self.process_push(control);
         self.styler.button(control, button);
-        true
+        pushed
     }
 
     pub fn begin(&mut self, input: Input) {
@@ -53,5 +72,12 @@ impl<T: Styler> Ugui<T> {
 
     pub fn end(&mut self) {
         self.styler.end();
+
+        // As soon as we let go of the primary mouse button, the active control should be cleared
+        if self.persistent_state.active_control.is_some()
+            && !self.persistent_state.current_input.primary_down
+        {
+            self.persistent_state.active_control = None;
+        }
     }
 }

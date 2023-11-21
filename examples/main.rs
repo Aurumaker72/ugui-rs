@@ -45,7 +45,7 @@ pub fn main() -> Result<(), String> {
             primary_down: event_pump.mouse_state().left(),
         });
 
-        ugui.button(
+        if (ugui.button(
             Control {
                 uid: 0,
                 enabled: true,
@@ -54,7 +54,9 @@ pub fn main() -> Result<(), String> {
             Button {
                 text: &"Hi".to_string(),
             },
-        );
+        )) {
+            println!("the")
+        }
 
         ugui.end();
     }
