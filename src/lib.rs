@@ -1,34 +1,20 @@
 pub mod control;
 pub mod geo;
+pub mod input;
 pub mod standard_styler;
 pub mod styler;
 
 use crate::control::{Button, Control};
+use crate::geo::Point;
+use crate::input::Input;
 use crate::styler::Styler;
-use sdl2::pixels::Color;
-use sdl2::render::WindowCanvas;
-
-#[derive(Clone, Copy)]
-pub struct Input {
-    pub x: f32,
-    pub y: f32,
-    pub primary_down: bool,
-}
-
-impl Default for Input {
-    fn default() -> Self {
-        Input {
-            x: 0f32,
-            y: 0f32,
-            primary_down: false,
-        }
-    }
-}
 
 pub struct Ugui<T: Styler> {
+    pub active_control: Option<i64>,
+    pub styler: T,
     pub current_input: Input,
     pub last_input: Input,
-    pub styler: T,
+    pub mouse_down_position: Point,
 }
 
 impl<T: Styler> Ugui<T> {
@@ -38,9 +24,19 @@ impl<T: Styler> Ugui<T> {
     }
 
     pub fn begin(&mut self, input: Input) {
-        self.last_input = self.current_input.clone();
+        self.last_input = self.current_input;
         self.current_input = input;
-        self.styler.begin();
+
+        if input.primary_down && !self.last_input.primary_down {
+            self.mouse_down_position = self.current_input.mouse_position;
+        }
+
+        self.styler.begin(
+            self.current_input,
+            self.last_input,
+            self.mouse_down_position,
+            self.active_control,
+        );
     }
 
     pub fn end(&mut self) {

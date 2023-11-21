@@ -1,11 +1,13 @@
 use crate::geo::Rect;
 
+#[derive(Copy, Clone)]
 pub struct Control {
-    pub uid: u64,
+    pub uid: i64,
     pub enabled: bool,
     pub rect: Rect,
 }
 
-pub struct Button {
-    pub text: String,
+#[derive(Copy, Clone)]
+pub struct Button<'a> {
+    pub text: &'a String,
 }
