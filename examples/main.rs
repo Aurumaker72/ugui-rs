@@ -25,11 +25,8 @@ pub fn main() -> Result<(), String> {
     let mut event_pump = sdl_context.event_pump().map_err(|e| e.to_string())?;
 
     let mut ugui = Ugui {
-        active_control: None,
         styler: StandardStyler::new(canvas, &ttf_context),
-        current_input: Default::default(),
-        last_input: Default::default(),
-        mouse_down_position: Default::default(),
+        persistent_state: Default::default(),
     };
 
     'running: loop {

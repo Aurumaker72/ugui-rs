@@ -2,7 +2,7 @@ use crate::control::{Button, Control};
 use crate::geo::{Point, Rect};
 use crate::standard_styler::VisualState::{Active, Disabled, Hover, Normal};
 use crate::styler::Styler;
-use crate::Input;
+use crate::{Input, PersistentState};
 use sdl2::pixels::Color;
 use sdl2::rect::Point as SdlPoint;
 use sdl2::render::WindowCanvas;
@@ -10,13 +10,10 @@ use sdl2::ttf::{Font, Sdl2TtfContext};
 use std::path::Path;
 
 pub struct StandardStyler<'a> {
-    pub current_input: Input,
-    pub last_input: Input,
-    pub mouse_down_position: Point,
-    pub active_control: Option<i64>,
-    pub canvas: WindowCanvas,
-    pub ttf_context: &'a Sdl2TtfContext,
-    pub font: Font<'a, 'static>,
+    canvas: WindowCanvas,
+    ttf_context: &'a Sdl2TtfContext,
+    font: Font<'a, 'static>,
+    persistent_state: PersistentState,
 }
 
 #[derive(Eq, PartialEq)]
@@ -34,10 +31,7 @@ impl<'a> StandardStyler<'a> {
             .unwrap();
 
         Self {
-            current_input: Default::default(),
-            last_input: Default::default(),
-            mouse_down_position: Default::default(),
-            active_control: None,
+            persistent_state: Default::default(),
             canvas,
             ttf_context,
             font,
@@ -49,22 +43,31 @@ impl<'a> StandardStyler<'a> {
             return Disabled;
         }
 
-        if self.active_control.is_some() && self.active_control.unwrap() == control.uid {
+        if self.persistent_state.active_control.is_some()
+            && self.persistent_state.active_control.unwrap() == control.uid
+        {
             return Active;
         }
 
-        let now_inside = self.current_input.mouse_position.inside(control.rect);
-        let down_inside = self.mouse_down_position.inside(control.rect);
+        let now_inside = self
+            .persistent_state
+            .current_input
+            .mouse_position
+            .inside(control.rect);
+        let down_inside = self
+            .persistent_state
+            .mouse_down_position
+            .inside(control.rect);
 
-        if now_inside && !self.current_input.primary_down {
+        if now_inside && !self.persistent_state.current_input.primary_down {
             return Hover;
         }
 
-        if down_inside && self.current_input.primary_down && !now_inside {
+        if down_inside && self.persistent_state.current_input.primary_down && !now_inside {
             return Hover;
         }
 
-        if now_inside && self.current_input.primary_down && down_inside {
+        if now_inside && self.persistent_state.current_input.primary_down && down_inside {
             return Active;
         }
 
@@ -73,17 +76,8 @@ impl<'a> StandardStyler<'a> {
 }
 
 impl<'a> Styler for StandardStyler<'a> {
-    fn begin(
-        &mut self,
-        current_input: Input,
-        last_input: Input,
-        mouse_down_position: Point,
-        active_control: Option<i64>,
-    ) {
-        self.current_input = current_input;
-        self.last_input = last_input;
-        self.mouse_down_position = mouse_down_position;
-        self.active_control = active_control;
+    fn begin(&mut self, persistent_state: PersistentState) {
+        self.persistent_state = persistent_state;
         self.canvas.set_draw_color(Color::RGB(253, 253, 253));
         self.canvas.clear();
     }
