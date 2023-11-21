@@ -4,7 +4,7 @@ pub mod input;
 pub mod standard_styler;
 pub mod styler;
 
-use crate::control::{Button, Control};
+use crate::control::{Button, Control, ListBox};
 use crate::geo::Point;
 use crate::input::Input;
 use crate::styler::Styler;
@@ -56,6 +56,28 @@ impl<T: Styler> Ugui<T> {
         let pushed = self.process_push(control);
         self.styler.button(control, button);
         pushed
+    }
+
+    pub fn listbox(&mut self, control: Control, listbox: ListBox) -> Option<usize> {
+        let pushed = self.process_push(control);
+        let mut index = listbox.index;
+        if pushed
+            || self
+                .persistent_state
+                .active_control
+                .is_some_and(|x| x == control.uid)
+        {
+            index = self.styler.listbox_index_at_point(
+                control,
+                listbox,
+                self.persistent_state
+                    .current_input
+                    .mouse_position
+                    .sub(control.rect.top_left()),
+            );
+        }
+        self.styler.listbox(control, listbox);
+        index
     }
 
     pub fn begin(&mut self, input: Input) {

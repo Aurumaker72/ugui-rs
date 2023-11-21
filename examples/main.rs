@@ -2,7 +2,8 @@ extern crate sdl2;
 
 use core::default::Default;
 use sdl2::event::Event;
-use ugui::control::{Button, Control};
+use std::ops::Deref;
+use ugui::control::{Button, Control, ListBox};
 use ugui::geo::Point;
 use ugui::input::Input;
 use ugui::standard_styler::StandardStyler;
@@ -29,6 +30,15 @@ pub fn main() -> Result<(), String> {
         persistent_state: Default::default(),
     };
 
+    let mut index = Some(0);
+    let mut items = vec![
+        "Item", "Item", "Item", "Item", "Item", "Item", "Item", "Item", "Item", "Item", "Item",
+        "Item", "Item", "Item", "Item", "Item", "Item", "Item", "Item", "Item", "Item", "Item",
+        "Item", "Item", "Item", "Item", "Item", "Item", "Item", "Item", "Item", "Item", "Item",
+        "Item", "Item", "Item", "Item", "Item", "Item", "Item", "Item", "Item", "Item", "Item",
+        "Item",
+    ];
+
     'running: loop {
         for event in event_pump.poll_iter() {
             match event {
@@ -45,18 +55,30 @@ pub fn main() -> Result<(), String> {
             primary_down: event_pump.mouse_state().left(),
         });
 
-        if (ugui.button(
+        if ugui.button(
             Control {
                 uid: 0,
                 enabled: true,
                 rect: geo::Rect::new(60.0, 30.0, 100.0, 23.0),
             },
             Button {
-                text: &"Hi".to_string(),
+                text: &*index.unwrap().to_string(),
             },
-        )) {
+        ) {
             println!("the")
         }
+
+        index = ugui.listbox(
+            Control {
+                uid: 1,
+                enabled: true,
+                rect: geo::Rect::new(60.0, 80.0, 200.0, 350.0),
+            },
+            ListBox {
+                items: &items,
+                index,
+            },
+        );
 
         ugui.end();
     }

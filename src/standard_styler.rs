@@ -1,8 +1,10 @@
-use crate::control::{Button, Control};
+use crate::control::{Button, Control, ListBox};
 use crate::geo::{Point, Rect};
 use crate::standard_styler::VisualState::{Active, Disabled, Hover, Normal};
 use crate::styler::Styler;
 use crate::{Input, PersistentState};
+use sdl2::keyboard::Keycode::KpMemAdd;
+use sdl2::libc::commit;
 use sdl2::pixels::Color;
 use sdl2::rect::Point as SdlPoint;
 use sdl2::rect::Rect as SdlRect;
@@ -31,6 +33,8 @@ enum Alignment {
     Center,
     End,
 }
+const listbox_item_padding: f32 = 4.0;
+const listbox_item_height: f32 = 20.0;
 
 impl<'a> StandardStyler<'a> {
     pub fn new(canvas: WindowCanvas, ttf_context: &'a Sdl2TtfContext) -> Self {
@@ -125,12 +129,45 @@ impl<'a> StandardStyler<'a> {
 
         return Normal;
     }
+
+    fn listbox_item(&mut self, control: Control, listbox: ListBox, index: usize, item: &str) {
+        let mut back_color = Color::WHITE;
+        let mut text_color = Color::BLACK;
+
+        if listbox.index.is_some_and(|x| x == index) {
+            back_color = Color::RGB(0, 120, 215);
+            text_color = Color::WHITE;
+        }
+        if !control.enabled {
+            back_color = Color::RGB(204, 204, 204);
+            text_color = Color::RGB(160, 160, 160);
+        }
+
+        let rect = Rect::new(
+            control.rect.x,
+            control.rect.y + (listbox_item_height * index as f32),
+            control.rect.w,
+            listbox_item_height,
+        )
+        .inflate(-1.0);
+
+        self.canvas.set_draw_color(back_color);
+        self.canvas.fill_rect(rect.to_sdl()).unwrap();
+
+        self.draw_text(
+            item,
+            rect.inflate(-listbox_item_padding).to_sdl(),
+            text_color,
+            Alignment::Start,
+            Alignment::Center,
+        );
+    }
 }
 
 impl<'a> Styler for StandardStyler<'a> {
     fn begin(&mut self, persistent_state: PersistentState) {
         self.persistent_state = persistent_state;
-        self.canvas.set_draw_color(Color::RGB(253, 253, 253));
+        self.canvas.set_draw_color(Color::RGB(240, 240, 240));
         self.canvas.clear();
     }
 
@@ -138,7 +175,6 @@ impl<'a> Styler for StandardStyler<'a> {
         let mut back_color = Color::BLACK;
         let mut border_color = Color::BLACK;
         let mut text_color = Color::BLACK;
-
         let visual_state = self.get_visual_state(control);
 
         if visual_state == Normal {
@@ -169,6 +205,43 @@ impl<'a> Styler for StandardStyler<'a> {
             Alignment::Center,
             Alignment::Center,
         );
+    }
+
+    fn listbox(&mut self, control: Control, listbox: ListBox) {
+        let back_color = Color::RGB(255, 255, 255);
+        let border_color = Color::RGB(130, 135, 144);
+        let visual_state = self.get_visual_state(control);
+
+        self.canvas.set_draw_color(border_color);
+        self.canvas.fill_rect(control.rect.to_sdl()).unwrap();
+        self.canvas.set_draw_color(back_color);
+        self.canvas
+            .fill_rect(control.rect.inflate(-1.0).to_sdl())
+            .unwrap();
+
+        let prev_clip_rect = self.canvas.clip_rect();
+        self.canvas
+            .set_clip_rect(control.rect.inflate(-1.0).to_sdl());
+
+        for i in 0..listbox.items.len() {
+            self.listbox_item(control, listbox, i, listbox.items[i]);
+        }
+
+        self.canvas.set_clip_rect(prev_clip_rect);
+    }
+
+    fn listbox_index_at_point(
+        &mut self,
+        control: Control,
+        listbox: ListBox,
+        point: Point,
+    ) -> Option<usize> {
+        if listbox.items.is_empty() {
+            return listbox.index;
+        }
+        let index = (point.y / listbox_item_height).floor() as usize;
+
+        return Some(index.clamp(0, listbox.items.len() - 1));
     }
 
     fn end(&mut self) {

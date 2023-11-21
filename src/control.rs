@@ -9,5 +9,11 @@ pub struct Control {
 
 #[derive(Copy, Clone)]
 pub struct Button<'a> {
-    pub text: &'a String,
+    pub text: &'a str,
+}
+
+#[derive(Copy, Clone)]
+pub struct ListBox<'a> {
+    pub items: &'a Vec<&'a str>,
+    pub index: Option<usize>,
 }

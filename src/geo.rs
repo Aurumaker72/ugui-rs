@@ -10,6 +10,18 @@ impl Point {
     pub fn inside(&self, rect: Rect) -> bool {
         self.x > rect.x && self.x < rect.right() && self.y > rect.y && self.y < rect.bottom()
     }
+    pub fn add(&self, other: Point) -> Point {
+        Point {
+            x: self.x + other.x,
+            y: self.y + other.y,
+        }
+    }
+    pub fn sub(&self, other: Point) -> Point {
+        Point {
+            x: self.x - other.x,
+            y: self.y - other.y,
+        }
+    }
 }
 impl Default for Point {
     fn default() -> Self {
@@ -37,13 +49,36 @@ impl Rect {
             h: self.h + v * 2.0,
         }
     }
-
+    pub fn top_left(&self) -> Point {
+        Point {
+            x: self.x,
+            y: self.y,
+        }
+    }
+    pub fn top_right(&self) -> Point {
+        Point {
+            x: self.x + self.w,
+            y: self.y,
+        }
+    }
+    pub fn bottom_left(&self) -> Point {
+        Point {
+            x: self.x,
+            y: self.y + self.h,
+        }
+    }
+    pub fn bottom_right(&self) -> Point {
+        Point {
+            x: self.x + self.w,
+            y: self.y + self.h,
+        }
+    }
     pub fn right(&self) -> f32 {
-        self.x + self.w
+        self.bottom_right().x
     }
 
     pub fn bottom(&self) -> f32 {
-        self.y + self.h
+        self.bottom_right().y
     }
 
     pub fn to_sdl(&self) -> SdlRect {
