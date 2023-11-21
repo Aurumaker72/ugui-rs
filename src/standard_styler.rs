@@ -86,11 +86,7 @@ impl<'a> StandardStyler<'a> {
         }
 
         self.canvas
-            .copy(
-                &texture,
-                None,
-                Some(computed_rect),
-            )
+            .copy(&texture, None, Some(computed_rect))
             .unwrap();
     }
 
@@ -141,6 +137,7 @@ impl<'a> Styler for StandardStyler<'a> {
     fn button(&mut self, control: Control, button: Button) {
         let mut back_color = Color::BLACK;
         let mut border_color = Color::BLACK;
+        let mut text_color = Color::BLACK;
 
         let visual_state = self.get_visual_state(control);
 
@@ -156,6 +153,7 @@ impl<'a> Styler for StandardStyler<'a> {
         } else if visual_state == Disabled {
             back_color = Color::RGB(204, 204, 204);
             border_color = Color::RGB(191, 191, 191);
+            text_color = Color::RGB(160, 160, 160);
         }
 
         self.canvas.set_draw_color(border_color);
@@ -167,7 +165,7 @@ impl<'a> Styler for StandardStyler<'a> {
         self.draw_text(
             button.text,
             control.rect.to_sdl(),
-            Color::BLACK,
+            text_color,
             Alignment::Center,
             Alignment::Center,
         );
