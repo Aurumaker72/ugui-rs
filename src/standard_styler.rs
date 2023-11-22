@@ -13,7 +13,7 @@ use std::path::Path;
 
 pub struct StandardStyler<'a> {
     canvas: WindowCanvas,
-    ttf_context: &'a Sdl2TtfContext,
+    _ttf_context: &'a Sdl2TtfContext,
     font: Font<'a, 'static>,
     persistent_state: PersistentState,
 }
@@ -32,8 +32,8 @@ enum Alignment {
     Center,
     End,
 }
-const listbox_item_padding: f32 = 4.0;
-const listbox_item_height: f32 = 20.0;
+const LISTBOX_ITEM_PADDING: f32 = 4.0;
+const LISTBOX_ITEM_HEIGHT: f32 = 20.0;
 
 impl<'a> StandardStyler<'a> {
     pub fn new(canvas: WindowCanvas, ttf_context: &'a Sdl2TtfContext) -> Self {
@@ -44,7 +44,7 @@ impl<'a> StandardStyler<'a> {
         Self {
             persistent_state: Default::default(),
             canvas,
-            ttf_context,
+            _ttf_context: ttf_context,
             font,
         }
     }
@@ -129,33 +129,25 @@ impl<'a> StandardStyler<'a> {
         Normal
     }
 
-    fn listbox_item(&mut self, control: Control, listbox: Listbox, index: usize, item: &str) {
+    fn listbox_item(&mut self, item: &str, enabled: bool, selected: bool, rect: Rect) {
         let mut back_color = Color::WHITE;
         let mut text_color = Color::BLACK;
 
-        if listbox.index.is_some_and(|x| x == index) {
+        if selected {
             back_color = Color::RGB(0, 120, 215);
             text_color = Color::WHITE;
         }
-        if !control.enabled {
+        if !enabled {
             back_color = Color::RGB(204, 204, 204);
             text_color = Color::RGB(160, 160, 160);
         }
-
-        let rect = Rect::new(
-            control.rect.x,
-            control.rect.y + (listbox_item_height * index as f32),
-            control.rect.w,
-            listbox_item_height,
-        )
-        .inflate(-1.0);
 
         self.canvas.set_draw_color(back_color);
         self.canvas.fill_rect(rect.to_sdl()).unwrap();
 
         self.draw_text(
             item,
-            rect.inflate(-listbox_item_padding).to_sdl(),
+            rect.inflate(-LISTBOX_ITEM_PADDING).to_sdl(),
             text_color,
             Alignment::Start,
             Alignment::Center,
@@ -253,10 +245,9 @@ impl<'a> Styler for StandardStyler<'a> {
         self.canvas.fill_rect(thumb_rect.to_sdl()).unwrap();
     }
 
-    fn listbox(&mut self, control: Control, listbox: Listbox) {
+    fn listbox(&mut self, control: Control, listbox: Listbox, scroll: Point) {
         let back_color = Color::RGB(255, 255, 255);
         let border_color = Color::RGB(130, 135, 144);
-        let _visual_state = self.get_visual_state(control);
 
         self.canvas.set_draw_color(border_color);
         self.canvas.fill_rect(control.rect.to_sdl()).unwrap();
@@ -269,8 +260,26 @@ impl<'a> Styler for StandardStyler<'a> {
         self.canvas
             .set_clip_rect(control.rect.inflate(-1.0).to_sdl());
 
+        let content_height = listbox.items.len() as f32 * LISTBOX_ITEM_HEIGHT;
+
         for i in 0..listbox.items.len() {
-            self.listbox_item(control, listbox, i, listbox.items[i]);
+            let base_y = (LISTBOX_ITEM_HEIGHT * i as f32);
+            let moved_y = scroll.y * (content_height - control.rect.h);
+            let final_y = base_y - moved_y;
+
+            let rect = Rect::new(
+                control.rect.x,
+                control.rect.y + final_y,
+                control.rect.w,
+                LISTBOX_ITEM_HEIGHT,
+            )
+            .inflate(-1.0);
+            self.listbox_item(
+                listbox.items[i],
+                control.enabled,
+                listbox.index.is_some_and(|x| x == i),
+                rect,
+            );
         }
 
         self.canvas.set_clip_rect(prev_clip_rect);
@@ -278,14 +287,21 @@ impl<'a> Styler for StandardStyler<'a> {
 
     fn listbox_index_at_point(
         &mut self,
-        _control: Control,
+        control: Control,
         listbox: Listbox,
+        scroll: Point,
         point: Point,
     ) -> Option<usize> {
         if listbox.items.is_empty() {
             return listbox.index;
         }
-        let index = (point.y / listbox_item_height).floor() as usize;
+
+        let content_height = listbox.items.len() as f32 * LISTBOX_ITEM_HEIGHT;
+
+        let index = (((point.y + (scroll.y * (content_height - control.rect.h)))
+            / LISTBOX_ITEM_HEIGHT)
+            .ceil()
+            - 1.0) as usize;
 
         Some(index.clamp(0, listbox.items.len() - 1))
     }

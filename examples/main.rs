@@ -2,7 +2,6 @@ extern crate sdl2;
 
 use core::default::Default;
 use sdl2::event::Event;
-use std::ops::Deref;
 use ugui::control::{Button, Control, Listbox, Scrollbar};
 use ugui::geo::Point;
 use ugui::input::Input;
@@ -33,12 +32,10 @@ pub fn main() -> Result<(), String> {
     let mut mouse_wheel = 0;
     let mut value = 0.0;
     let mut index = Some(0);
-    let mut items = vec![
-        "Item", "Item", "Item", "Item", "Item", "Item", "Item", "Item", "Item", "Item", "Item",
-        "Item", "Item", "Item", "Item", "Item", "Item", "Item", "Item", "Item", "Item", "Item",
-        "Item", "Item", "Item", "Item", "Item", "Item", "Item", "Item", "Item", "Item", "Item",
-        "Item", "Item", "Item", "Item", "Item", "Item", "Item", "Item", "Item", "Item", "Item",
-        "Item",
+    let items = vec![
+        "Item A", "Item B", "Item C", "Item A", "Item B", "Item C", "Item A", "Item B", "Item C",
+        "Item A", "Item B", "Item C", "Item A", "Item B", "Item C", "Item A", "Item B", "Item C",
+        "Item A", "Item B", "Item C",
     ];
 
     'running: loop {
