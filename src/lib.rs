@@ -32,20 +32,14 @@ pub struct Ugui<T: Styler> {
 
 impl<T: Styler> Ugui<T> {
     fn ensure_control_data_exists(&mut self, uid: i64) {
-        if !self.persistent_state.control_state.contains_key(&uid) {
-            self.persistent_state
-                .control_state
-                .insert(uid, Default::default());
-        }
+        self.persistent_state
+            .control_state
+            .entry(uid)
+            .or_insert_with(Default::default);
     }
     fn get_control_data(&mut self, uid: i64) -> PersistentControlState {
         self.ensure_control_data_exists(uid);
-        return self
-            .persistent_state
-            .control_state
-            .get(&uid)
-            .unwrap()
-            .clone();
+        return *self.persistent_state.control_state.get(&uid).unwrap();
     }
     fn update_control_data(
         &mut self,
@@ -55,7 +49,7 @@ impl<T: Styler> Ugui<T> {
         self.ensure_control_data_exists(uid);
 
         let data = self.persistent_state.control_state.get(&uid).unwrap();
-        let new_data = setter(data.clone());
+        let new_data = setter(*data);
         self.persistent_state.control_state.insert(uid, new_data);
     }
 
@@ -115,7 +109,7 @@ impl<T: Styler> Ugui<T> {
 
         self.styler.scrollbar(control, scrollbar);
 
-        return value;
+        value
     }
     pub fn listbox(&mut self, mut control: Control, listbox: Listbox) -> Option<usize> {
         control.rect.w -= 16.0;

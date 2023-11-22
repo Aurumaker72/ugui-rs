@@ -9,9 +9,9 @@ pub struct Input {
 
 impl Input {
     fn wheel_up(&self) -> bool {
-        return self.mouse_wheel < 0;
+        self.mouse_wheel < 0
     }
     fn wheel_down(&self) -> bool {
-        return self.mouse_wheel > 0;
+        self.mouse_wheel > 0
     }
 }

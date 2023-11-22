@@ -66,7 +66,7 @@ pub fn main() -> Result<(), String> {
                 rect: geo::Rect::new(60.0, 30.0, 100.0, 23.0),
             },
             Button {
-                text: &*index.unwrap().to_string(),
+                text: &index.unwrap().to_string(),
             },
         ) {
             println!("the")

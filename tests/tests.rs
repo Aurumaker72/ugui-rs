@@ -1,6 +1,5 @@
 #[cfg(test)]
 mod tests {
-    use ugui::*;
 
     #[test]
     fn it_works() {

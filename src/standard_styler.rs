@@ -263,7 +263,7 @@ impl<'a> Styler for StandardStyler<'a> {
         let content_height = listbox.items.len() as f32 * LISTBOX_ITEM_HEIGHT;
 
         for i in 0..listbox.items.len() {
-            let base_y = (LISTBOX_ITEM_HEIGHT * i as f32);
+            let base_y = LISTBOX_ITEM_HEIGHT * i as f32;
             let moved_y = scroll.y * (content_height - control.rect.h);
             let final_y = base_y - moved_y;
 
