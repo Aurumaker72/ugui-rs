@@ -155,20 +155,38 @@ impl<'a> StandardStyler<'a> {
     }
 
     fn scrollbar_get_thumb(control: Control, scrollbar: Scrollbar) -> Rect {
-        let scrollbar_height = control.rect.h * (1.0 / scrollbar.ratio);
-        let scrollbar_y = remap(
-            scrollbar.value,
-            0.0,
-            1.0,
-            0.0,
-            control.rect.h - scrollbar_height,
-        );
+        if control.rect.w > control.rect.h {
+            let scrollbar_width = control.rect.w * (1.0 / scrollbar.ratio);
+            let scrollbar_x = remap(
+                scrollbar.value,
+                0.0,
+                1.0,
+                0.0,
+                control.rect.w - scrollbar_width,
+            );
 
-        Rect {
-            x: control.rect.x,
-            y: control.rect.y + scrollbar_y,
-            w: control.rect.w,
-            h: scrollbar_height,
+            Rect {
+                x: control.rect.x + scrollbar_x,
+                y: control.rect.y,
+                w: scrollbar_width,
+                h: control.rect.h,
+            }
+        } else {
+            let scrollbar_height = control.rect.h * (1.0 / scrollbar.ratio);
+            let scrollbar_y = remap(
+                scrollbar.value,
+                0.0,
+                1.0,
+                0.0,
+                control.rect.h - scrollbar_height,
+            );
+
+            Rect {
+                x: control.rect.x,
+                y: control.rect.y + scrollbar_y,
+                w: control.rect.w,
+                h: scrollbar_height,
+            }
         }
     }
 }

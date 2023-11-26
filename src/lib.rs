@@ -78,6 +78,7 @@ impl<T: Styler> Ugui<T> {
     }
     pub fn scrollbar(&mut self, control: Control, scrollbar: Scrollbar) -> f32 {
         let pushed = self.process_push(control);
+        let is_horizontal = control.rect.w > control.rect.h;
         let mut value = scrollbar.value;
 
         if pushed
@@ -96,8 +97,17 @@ impl<T: Styler> Ugui<T> {
                 .mouse_down_position
                 .sub(control.rect.top_left());
 
-            let current = relative_mouse.y / control.rect.h;
-            let start = relative_mouse_down.y / control.rect.h;
+            let current: f32;
+            let start: f32;
+
+            if is_horizontal {
+                current = relative_mouse.x / control.rect.w;
+                start = relative_mouse_down.x / control.rect.w;
+            } else {
+                current = relative_mouse.y / control.rect.h;
+                start = relative_mouse_down.y / control.rect.h;
+            }
+
             value = start + (current - start);
         }
 
