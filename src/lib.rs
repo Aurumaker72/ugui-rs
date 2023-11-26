@@ -151,14 +151,7 @@ impl<T: Styler> Ugui<T> {
             .get_control_data(vertical_scrollbar.uid)
             .scrollbar_value;
 
-        let content_size = self.styler.listbox_get_content_size(
-            control,
-            listbox,
-            Point {
-                x: horizontal_scrollbar_value,
-                y: vertical_scrollbar_value,
-            },
-        );
+        let content_size = self.styler.listbox_get_content_size(control, listbox);
 
         let content_ratio = Point {
             x: content_size.x / control.rect.w,

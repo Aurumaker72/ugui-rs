@@ -1,4 +1,4 @@
-use crate::control::{Button, Control, Listbox, Scrollbar};
+use crate::control::{Button, Control, Listbox, Scrollbar, Textbox};
 use crate::geo::{remap, Point, Rect};
 use crate::standard_styler::VisualState::{Active, Disabled, Hover, Normal};
 use crate::styler::Styler;
@@ -301,7 +301,7 @@ impl<'a> Styler for StandardStyler<'a> {
             .set_clip_rect(control.rect.inflate(-1.0).to_sdl());
 
         let visible_range = self.get_visible_range(control, listbox, scroll);
-        let content_size = self.listbox_get_content_size(control, listbox, scroll);
+        let content_size = self.listbox_get_content_size(control, listbox);
 
         let x_offset = ((content_size.x - control.rect.w) * scroll.x).max(0.0);
 
@@ -338,7 +338,7 @@ impl<'a> Styler for StandardStyler<'a> {
         if listbox.items.is_empty() {
             return listbox.index;
         }
-        let content_size = self.listbox_get_content_size(control, listbox, scroll);
+        let content_size = self.listbox_get_content_size(control, listbox);
 
         let index = (((point.y + (scroll.y * (content_size.y - control.rect.h)))
             / LISTBOX_ITEM_HEIGHT)
@@ -348,7 +348,7 @@ impl<'a> Styler for StandardStyler<'a> {
         Some(index.clamp(0, listbox.items.len() - 1))
     }
 
-    fn listbox_get_content_size(&self, control: Control, listbox: Listbox, scroll: Point) -> Point {
+    fn listbox_get_content_size(&self, control: Control, listbox: Listbox) -> Point {
         // Width is measured by getting max width of all items
         // TODO: Optimize, as this is very slow on large data sets
         let item_widths = listbox
@@ -361,5 +361,9 @@ impl<'a> Styler for StandardStyler<'a> {
             x: item_widths.max().unwrap() as f32 + LISTBOX_ITEM_PADDING,
             y: listbox.items.len() as f32 * LISTBOX_ITEM_HEIGHT,
         };
+    }
+
+    fn textbox(&mut self, control: Control, textbox: Textbox, scroll: Point) {
+        todo!()
     }
 }

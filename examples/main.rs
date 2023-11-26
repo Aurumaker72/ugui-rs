@@ -33,8 +33,8 @@ pub fn main() -> Result<(), String> {
     let mut value = 0.0;
     let mut enabled = true;
     let mut index = Some(0);
+    let mut text = "hallo";
     let items = vec![
-        "Item A",
         "Item B",
         "Item C",
         "Item A",
@@ -47,16 +47,7 @@ pub fn main() -> Result<(), String> {
         "Item B",
         "Item C",
         "Item A",
-        "TEST TEST TEST TEST TEST TEST TEST TEST TEST TEST",
-        "Item C",
-        "Item A",
-        "Item B",
-        "Item C",
-        "Item A",
-        "Item B",
-        "Item C",
-        "Item A",
-        "Item B",
+        "asddaksadskjdasjdasjkadskjadsjkadsjkadsjkadsjk B",
         "Item C",
         "Item A",
         "Item B",

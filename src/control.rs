@@ -33,3 +33,8 @@ pub struct Listbox<'a> {
     pub items: &'a Vec<&'a str>,
     pub index: Option<usize>,
 }
+
+#[derive(Copy, Clone)]
+pub struct Textbox<'a> {
+    pub text: &'a String,
+}
