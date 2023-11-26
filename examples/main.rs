@@ -31,6 +31,7 @@ pub fn main() -> Result<(), String> {
 
     let mut mouse_wheel = 0;
     let mut value = 0.0;
+    let mut enabled = true;
     let mut index = Some(0);
     let items = vec![
         "Item A",
@@ -100,33 +101,26 @@ pub fn main() -> Result<(), String> {
                 uid: 0,
                 enabled: true,
                 rect: geo::Rect::new(60.0, 30.0, 100.0, 23.0),
+                ..Default::default()
             },
             Button {
                 text: &index.unwrap().to_string(),
             },
         ) {
-            println!("the")
+            enabled ^= true;
         }
 
         index = ugui.listbox(
             Control {
                 uid: 10,
-                enabled: true,
+                enabled,
                 rect: geo::Rect::new(60.0, 80.0, 200.0, 350.0),
+                ..Default::default()
             },
             Listbox {
                 items: &items,
                 index,
             },
-        );
-
-        value = ugui.scrollbar(
-            Control {
-                uid: 20,
-                enabled: true,
-                rect: geo::Rect::new(300.0, 80.0, 350.0, 16.0),
-            },
-            Scrollbar { value, ratio: 1.5 },
         );
 
         ugui.end();

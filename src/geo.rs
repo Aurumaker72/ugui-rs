@@ -1,6 +1,6 @@
 use sdl2::rect::Rect as SdlRect;
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Default)]
 pub struct Point {
     pub x: f32,
     pub y: f32,
@@ -23,13 +23,8 @@ impl Point {
         }
     }
 }
-impl Default for Point {
-    fn default() -> Self {
-        Point { x: 0.0, y: 0.0 }
-    }
-}
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Default)]
 pub struct Rect {
     pub x: f32,
     pub y: f32,

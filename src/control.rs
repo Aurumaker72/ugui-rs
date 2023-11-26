@@ -7,6 +7,16 @@ pub struct Control {
     pub rect: Rect,
 }
 
+impl Default for Control {
+    fn default() -> Self {
+        Control {
+            enabled: true,
+            uid: 0,
+            rect: Default::default(),
+        }
+    }
+}
+
 #[derive(Copy, Clone)]
 pub struct Button<'a> {
     pub text: &'a str,
