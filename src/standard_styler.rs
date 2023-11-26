@@ -3,6 +3,8 @@ use crate::geo::{remap, Point, Rect};
 use crate::standard_styler::VisualState::{Active, Disabled, Hover, Normal};
 use crate::styler::Styler;
 use crate::PersistentState;
+use std::cmp;
+use std::cmp::max;
 
 use sdl2::pixels::Color;
 
@@ -312,7 +314,7 @@ impl<'a> Styler for StandardStyler<'a> {
             let rect = Rect::new(
                 control.rect.x - x_offset,
                 control.rect.y + final_y,
-                content_size.x,
+                content_size.x.max(control.rect.w),
                 LISTBOX_ITEM_HEIGHT,
             )
             .inflate(-1.0);
