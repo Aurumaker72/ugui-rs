@@ -314,7 +314,7 @@ impl<'a> Styler for StandardStyler<'a> {
             let rect = Rect::new(
                 control.rect.x - x_offset,
                 control.rect.y + final_y,
-                content_size.x.max(control.rect.w),
+                content_size.x,
                 LISTBOX_ITEM_HEIGHT,
             )
             .inflate(-1.0);
@@ -350,12 +350,10 @@ impl<'a> Styler for StandardStyler<'a> {
     }
 
     fn listbox_get_content_size(&self, control: Control, listbox: Listbox, scroll: Point) -> Point {
-        let visible_range = self.get_visible_range(control, listbox, scroll);
-
-        // Width is measured by getting max width of all visible items
-        let (index_begin, index_end) = visible_range;
-        let visible_items = &listbox.items[index_begin..index_end];
-        let item_widths = visible_items
+        // Width is measured by getting max width of all items
+        // TODO: Optimize, as this is very slow on large data sets
+        let item_widths = listbox
+            .items
             .iter()
             .map(|x| self.font.size_of(x).unwrap().0);
 
