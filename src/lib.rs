@@ -112,28 +112,35 @@ impl<T: Styler> Ugui<T> {
         value
     }
     pub fn listbox(&mut self, mut control: Control, listbox: Listbox) -> Option<usize> {
-        control.rect.w -= 16.0;
+        let content_ratio = self.styler.listbox_get_content_ratio(control, listbox);
+        let mut scroll = 0.0f32;
 
-        let scrollbar_control = Control {
-            uid: control.uid + 1,
-            enabled: control.enabled,
-            rect: Rect {
-                x: control.rect.right(),
-                y: control.rect.y,
-                w: 16.0,
-                h: control.rect.h,
-            },
-        };
+        if content_ratio > 1.0 {
+            control.rect.w -= 16.0;
 
-        let scrollbar_control_data = self.get_control_data(scrollbar_control.uid);
+            let scrollbar_control = Control {
+                uid: control.uid + 1,
+                enabled: control.enabled,
+                rect: Rect {
+                    x: control.rect.right(),
+                    y: control.rect.y,
+                    w: 16.0,
+                    h: control.rect.h,
+                },
+            };
 
-        self.scrollbar(
-            scrollbar_control,
-            Scrollbar {
-                value: scrollbar_control_data.scrollbar_value,
-                ratio: 1.5,
-            },
-        );
+            let scrollbar_control_data = self.get_control_data(scrollbar_control.uid);
+
+            self.scrollbar(
+                scrollbar_control,
+                Scrollbar {
+                    value: scrollbar_control_data.scrollbar_value,
+                    ratio: self.styler.listbox_get_content_ratio(control, listbox),
+                },
+            );
+
+            scroll = scrollbar_control_data.scrollbar_value;
+        }
 
         let pushed = self.process_push(control);
         let mut index = listbox.index;
@@ -147,10 +154,7 @@ impl<T: Styler> Ugui<T> {
             index = self.styler.listbox_index_at_point(
                 control,
                 listbox,
-                Point {
-                    x: 0.0,
-                    y: scrollbar_control_data.scrollbar_value,
-                },
+                Point { x: 0.0, y: scroll },
                 self.persistent_state
                     .current_input
                     .mouse_position
@@ -158,14 +162,8 @@ impl<T: Styler> Ugui<T> {
             );
         }
 
-        self.styler.listbox(
-            control,
-            listbox,
-            Point {
-                x: 0.0,
-                y: scrollbar_control_data.scrollbar_value,
-            },
-        );
+        self.styler
+            .listbox(control, listbox, Point { x: 0.0, y: scroll });
 
         index
     }

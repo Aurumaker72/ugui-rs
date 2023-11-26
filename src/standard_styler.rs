@@ -311,4 +311,10 @@ impl<'a> Styler for StandardStyler<'a> {
 
         Some(index.clamp(0, listbox.items.len() - 1))
     }
+
+    fn listbox_get_content_ratio(&self, control: Control, listbox: Listbox) -> f32 {
+        let content_height = listbox.items.len() as f32 * LISTBOX_ITEM_HEIGHT;
+
+        return content_height / control.rect.h;
+    }
 }
