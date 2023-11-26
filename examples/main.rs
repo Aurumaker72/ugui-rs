@@ -2,7 +2,8 @@ extern crate sdl2;
 
 use core::default::Default;
 use sdl2::event::Event;
-use ugui::control::{Button, Control, Listbox, Scrollbar};
+use sdl2::libc::printf;
+use ugui::control::{Button, Control, Listbox, Scrollbar, Textbox};
 use ugui::geo::Point;
 use ugui::input::Input;
 use ugui::standard_styler::StandardStyler;
@@ -33,7 +34,7 @@ pub fn main() -> Result<(), String> {
     let mut value = 0.0;
     let mut enabled = true;
     let mut index = Some(0);
-    let mut text = "hallo";
+    let mut text = "adsdsaads\nbafdvcvascasdasd\nadskasdasdkl\n\nads".to_string();
     let items = vec![
         "Item B",
         "Item C",
@@ -112,6 +113,16 @@ pub fn main() -> Result<(), String> {
                 items: &items,
                 index,
             },
+        );
+
+        text = ugui.textbox(
+            Control {
+                uid: 15,
+                enabled,
+                rect: geo::Rect::new(300.0, 50.0, 300.0, 200.0),
+                ..Default::default()
+            },
+            Textbox { text: &text },
         );
 
         ugui.end();

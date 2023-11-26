@@ -4,7 +4,7 @@ pub mod input;
 pub mod standard_styler;
 pub mod styler;
 
-use crate::control::{Button, Control, Listbox, Scrollbar};
+use crate::control::{Button, Control, Listbox, Scrollbar, Textbox};
 use crate::geo::{Point, Rect};
 use crate::input::Input;
 use crate::styler::Styler;
@@ -14,6 +14,9 @@ use std::collections::HashMap;
 #[derive(Copy, Clone, Default)]
 struct PersistentControlState {
     scrollbar_value: f32,
+    textbox_caret: usize,
+    textbox_selection_start: Option<usize>,
+    textbox_selection_end: Option<usize>,
 }
 
 #[derive(Clone, Default)]
@@ -211,6 +214,105 @@ impl<T: Styler> Ugui<T> {
         self.styler.listbox(control, listbox, scroll);
 
         index
+    }
+
+    pub fn textbox(&mut self, mut control: Control, textbox: Textbox) -> String {
+        let horizontal_scrollbar = Control {
+            uid: control.uid + 1,
+            enabled: control.enabled,
+            rect: Rect {
+                x: control.rect.x,
+                y: control.rect.bottom() - 16.0,
+                w: control.rect.w - 16.0,
+                h: 16.0,
+            },
+        };
+
+        let vertical_scrollbar = Control {
+            uid: control.uid + 2,
+            enabled: control.enabled,
+            rect: Rect {
+                x: control.rect.right() - 16.0,
+                y: control.rect.y,
+                w: 16.0,
+                h: control.rect.h,
+            },
+        };
+
+        let horizontal_scrollbar_value = self
+            .get_control_data(horizontal_scrollbar.uid)
+            .scrollbar_value;
+        let vertical_scrollbar_value = self
+            .get_control_data(vertical_scrollbar.uid)
+            .scrollbar_value;
+
+        let content_size = self.styler.textbox_get_content_size(control, textbox);
+
+        let content_ratio = Point {
+            x: content_size.x / control.rect.w,
+            y: content_size.y / control.rect.h,
+        };
+
+        let mut scroll = Point::default();
+
+        // For horizontal overflow, shrink control bounds and place a horizontal scrollbar
+        if content_ratio.x > 1.0 {
+            control.rect.h -= 16.0;
+            self.scrollbar(
+                horizontal_scrollbar,
+                Scrollbar {
+                    value: horizontal_scrollbar_value,
+                    ratio: content_ratio.x,
+                },
+            );
+
+            scroll.x = horizontal_scrollbar_value;
+        }
+
+        // For vertical overflow, shrink control bounds and place a vertical scrollbar
+        if content_ratio.y > 1.0 {
+            control.rect.w -= 16.0;
+            self.scrollbar(
+                vertical_scrollbar,
+                Scrollbar {
+                    value: vertical_scrollbar_value,
+                    ratio: content_ratio.y,
+                },
+            );
+
+            scroll.y = vertical_scrollbar_value;
+        }
+
+        let pushed = self.process_push(control);
+        let mut text = textbox.text;
+
+        if pushed
+            || self
+                .persistent_state
+                .active_control
+                .is_some_and(|x| x == control.uid)
+        {
+            let index = self.styler.textbox_index_at_point(
+                control,
+                textbox,
+                scroll,
+                self.persistent_state.current_input.mouse_position,
+            );
+            println!("{}", index.unwrap());
+            // index = self.styler.listbox_index_at_point(
+            //     control,
+            //     listbox,
+            //     scroll,
+            //     self.persistent_state
+            //         .current_input
+            //         .mouse_position
+            //         .sub(control.rect.top_left()),
+            // );
+        }
+
+        self.styler.textbox(control, textbox, scroll);
+
+        text.clone()
     }
 
     pub fn begin(&mut self, input: Input) {

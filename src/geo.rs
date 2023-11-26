@@ -76,6 +76,38 @@ impl Rect {
         self.bottom_right().y
     }
 
+    pub fn add(&self, other: Rect) -> Rect {
+        Rect {
+            x: self.x + other.x,
+            y: self.y + other.y,
+            ..*self
+        }
+    }
+
+    pub fn add_pt(&self, other: Point) -> Rect {
+        Rect {
+            x: self.x + other.x,
+            y: self.y + other.y,
+            ..*self
+        }
+    }
+
+    pub fn sub(&self, other: Rect) -> Rect {
+        Rect {
+            x: self.x - other.x,
+            y: self.y - other.y,
+            ..*self
+        }
+    }
+
+    pub fn sub_pt(&self, other: Point) -> Rect {
+        Rect {
+            x: self.x - other.x,
+            y: self.y - other.y,
+            ..*self
+        }
+    }
+
     pub fn to_sdl(&self) -> SdlRect {
         SdlRect::new(self.x as i32, self.y as i32, self.w as u32, self.h as u32)
     }

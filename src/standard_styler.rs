@@ -36,6 +36,7 @@ enum Alignment {
 }
 const LISTBOX_ITEM_PADDING: f32 = 4.0;
 const LISTBOX_ITEM_HEIGHT: f32 = 20.0;
+const FONT_SIZE: f32 = 12.0;
 
 pub struct StandardStyler<'a> {
     canvas: WindowCanvas,
@@ -51,6 +52,7 @@ pub struct StandardStyler<'a> {
     listbox_item_text_colors: HashMap<VisualState, Color>,
     textbox_back_colors: HashMap<VisualState, Color>,
     textbox_border_colors: HashMap<VisualState, Color>,
+    textbox_text_colors: HashMap<VisualState, Color>,
     scrollbar_back_colors: HashMap<VisualState, Color>,
     scrollbar_thumb_colors: HashMap<VisualState, Color>,
 }
@@ -58,7 +60,7 @@ pub struct StandardStyler<'a> {
 impl<'a> StandardStyler<'a> {
     pub fn new(canvas: WindowCanvas, ttf_context: &'a Sdl2TtfContext) -> Self {
         let font = ttf_context
-            .load_font(Path::new("examples/fonts/segoe.ttf"), 12)
+            .load_font(Path::new("examples/fonts/segoe.ttf"), FONT_SIZE as u16)
             .unwrap();
 
         let mut button_back_colors = HashMap::new();
@@ -115,6 +117,12 @@ impl<'a> StandardStyler<'a> {
         textbox_border_colors.insert(Active, hex("#0078D7"));
         textbox_border_colors.insert(Disabled, hex("#CCCCCC"));
 
+        let mut textbox_text_colors = HashMap::new();
+        textbox_text_colors.insert(Normal, hex("#000000"));
+        textbox_text_colors.insert(Hover, hex("#000000"));
+        textbox_text_colors.insert(Active, hex("#000000"));
+        textbox_text_colors.insert(Disabled, hex("#CCCCCC"));
+
         let mut scrollbar_back_colors = HashMap::new();
         scrollbar_back_colors.insert(Normal, hex("#F0F0F0"));
         scrollbar_back_colors.insert(Hover, hex("#F0F0F0"));
@@ -141,53 +149,111 @@ impl<'a> StandardStyler<'a> {
             listbox_item_text_colors,
             textbox_back_colors,
             textbox_border_colors,
+            textbox_text_colors,
             scrollbar_back_colors,
             scrollbar_thumb_colors,
         }
     }
 
+    fn quad(&mut self, rect: Rect, back_color: Color, border_color: Color) {
+        self.canvas.set_draw_color(border_color);
+        self.canvas.fill_rect(rect.to_sdl()).unwrap();
+        self.canvas.set_draw_color(back_color);
+        self.canvas.fill_rect(rect.inflate(-1.0).to_sdl()).unwrap();
+    }
+
+    fn index_in_string(&mut self, text: &str, point: Point) -> usize {
+        let mut lowest_distance = f32::MAX;
+        let mut lowest_index = 0usize;
+        let mut current_y = 0.0;
+
+        return lowest_index;
+        for (i, c) in text.chars().enumerate() {
+            if c == '\n' {
+                current_y += FONT_SIZE;
+                continue;
+            }
+            let slice = &text[0..i];
+            let text_size = self.font.size_of(slice).unwrap();
+
+            let dist_x = (text_size.0 as f32 - point.x).abs();
+            let dist_y = (current_y - point.y).abs();
+
+            let dist = (dist_x.powi(2) + dist_y.powi(2)).sqrt();
+
+            if dist < lowest_distance {
+                lowest_distance = dist;
+                lowest_index = i;
+            }
+        }
+
+        lowest_index
+    }
     fn draw_text(
         &mut self,
         text: &str,
-        rect: SdlRect,
+        rect: Rect,
         color: Color,
         horizontal_alignment: Alignment,
         vertical_alignment: Alignment,
     ) {
         let texture_creator = self.canvas.texture_creator();
 
-        let surface = self
-            .font
-            .render(text)
-            .blended(color)
-            .map_err(|e| e.to_string())
-            .unwrap();
+        let lines = text.split("\n").collect::<Vec<&str>>();
 
-        let texture = texture_creator
-            .create_texture_from_surface(&surface)
-            .map_err(|e| e.to_string())
-            .unwrap();
+        for i in 0..lines.len() {
+            let line = lines[i];
 
-        let text_rect = self.font.size_of(text).unwrap();
+            // SDL freaks out when rendering 0-width strings
+            if line.replace("\n", "").len() == 0 {
+                continue;
+            }
 
-        let mut computed_rect = SdlRect::new(rect.x, rect.y, text_rect.0, text_rect.1);
+            let surface = self
+                .font
+                .render(line)
+                .blended(color)
+                .map_err(|e| e.to_string())
+                .unwrap();
 
-        if horizontal_alignment == Alignment::End {
-            computed_rect.x = rect.x + rect.w - text_rect.0 as i32;
+            let texture = texture_creator
+                .create_texture_from_surface(&surface)
+                .map_err(|e| e.to_string())
+                .unwrap();
+
+            let size = self.font.size_of(text).unwrap();
+            let text_size = Point {
+                x: size.0 as f32,
+                y: size.1 as f32,
+            };
+            let mut line_rect = Rect {
+                x: rect.x,
+                y: rect.y + (i as f32 * FONT_SIZE),
+                w: rect.w,
+                h: FONT_SIZE,
+            };
+            if lines.len() == 1 {
+                // Single-line string: line rect is just the regular rect
+                line_rect = rect;
+            }
+            if horizontal_alignment == Alignment::Center {
+                line_rect.x += line_rect.w / 2.0 - text_size.x / 2.0;
+            }
+            if horizontal_alignment == Alignment::End {
+                line_rect.x += line_rect.w - text_size.x;
+            }
+            if vertical_alignment == Alignment::Center {
+                line_rect.y += line_rect.h / 2.0 - text_size.y / 2.0;
+            }
+            if vertical_alignment == Alignment::End {
+                line_rect.y += line_rect.h - text_size.y;
+            }
+            line_rect.w = text_size.x;
+            line_rect.h = text_size.y;
+            self.canvas
+                .copy(&texture, None, Some(line_rect.to_sdl()))
+                .unwrap();
         }
-        if horizontal_alignment == Alignment::Center {
-            computed_rect.x = rect.x + rect.w / 2 - text_rect.0 as i32 / 2;
-        }
-        if vertical_alignment == Alignment::End {
-            computed_rect.y = rect.y + rect.h - text_rect.1 as i32;
-        }
-        if vertical_alignment == Alignment::Center {
-            computed_rect.y = rect.y + rect.h / 2 - text_rect.1 as i32 / 2;
-        }
-
-        self.canvas
-            .copy(&texture, None, Some(computed_rect))
-            .unwrap();
     }
 
     fn get_visual_state(&mut self, control: Control) -> VisualState {
@@ -246,12 +312,11 @@ impl<'a> StandardStyler<'a> {
             .unwrap()
             .clone();
 
-        self.canvas.set_draw_color(back_color);
-        self.canvas.fill_rect(rect.to_sdl()).unwrap();
+        self.quad(rect, back_color, back_color);
 
         self.draw_text(
             item,
-            rect.inflate(-LISTBOX_ITEM_PADDING).to_sdl(),
+            rect.inflate(-LISTBOX_ITEM_PADDING),
             text_color,
             Alignment::Start,
             Alignment::Center,
@@ -335,15 +400,10 @@ impl<'a> Styler for StandardStyler<'a> {
             .clone();
         let text_color = self.button_text_colors.get(&visual_state).unwrap().clone();
 
-        self.canvas.set_draw_color(border_color);
-        self.canvas.fill_rect(control.rect.to_sdl()).unwrap();
-        self.canvas.set_draw_color(back_color);
-        self.canvas
-            .fill_rect(control.rect.inflate(-1.0).to_sdl())
-            .unwrap();
+        self.quad(control.rect, back_color, border_color);
         self.draw_text(
             button.text,
-            control.rect.to_sdl(),
+            control.rect,
             text_color,
             Alignment::Center,
             Alignment::Center,
@@ -370,11 +430,8 @@ impl<'a> Styler for StandardStyler<'a> {
             .unwrap()
             .clone();
 
-        self.canvas.set_draw_color(back_color);
-        self.canvas.fill_rect(control.rect.to_sdl()).unwrap();
-
-        self.canvas.set_draw_color(thumb_color);
-        self.canvas.fill_rect(thumb_rect.to_sdl()).unwrap();
+        self.quad(control.rect, back_color, back_color);
+        self.quad(thumb_rect, thumb_color, thumb_color);
     }
 
     fn listbox(&mut self, control: Control, listbox: Listbox, scroll: Point) {
@@ -386,12 +443,7 @@ impl<'a> Styler for StandardStyler<'a> {
             .unwrap()
             .clone();
 
-        self.canvas.set_draw_color(border_color);
-        self.canvas.fill_rect(control.rect.to_sdl()).unwrap();
-        self.canvas.set_draw_color(back_color);
-        self.canvas
-            .fill_rect(control.rect.inflate(-1.0).to_sdl())
-            .unwrap();
+        self.quad(control.rect, back_color, border_color);
 
         let prev_clip_rect = self.canvas.clip_rect();
         self.canvas
@@ -461,6 +513,47 @@ impl<'a> Styler for StandardStyler<'a> {
     }
 
     fn textbox(&mut self, control: Control, textbox: Textbox, scroll: Point) {
-        todo!()
+        let visual_state = self.get_visual_state(control);
+        let back_color = self.textbox_back_colors.get(&visual_state).unwrap().clone();
+        let text_color = self.textbox_text_colors.get(&visual_state).unwrap().clone();
+        let border_color = self
+            .listbox_border_colors
+            .get(&visual_state)
+            .unwrap()
+            .clone();
+
+        self.quad(control.rect, back_color, border_color);
+
+        let lines = textbox.text.split("\n").collect::<Vec<&str>>();
+
+        for i in 0..lines.len() {
+            let rect = Rect {
+                x: control.rect.x,
+                y: control.rect.y + (i as f32 * FONT_SIZE),
+                w: control.rect.w,
+                h: FONT_SIZE,
+            };
+            self.draw_text(
+                lines[i],
+                rect,
+                text_color,
+                Alignment::Start,
+                Alignment::Center,
+            );
+        }
+    }
+
+    fn textbox_get_content_size(&self, control: Control, textbox: Textbox) -> Point {
+        Default::default()
+    }
+
+    fn textbox_index_at_point(
+        &mut self,
+        control: Control,
+        textbox: Textbox,
+        scroll: Point,
+        point: Point,
+    ) -> Option<usize> {
+        return Some(self.index_in_string(textbox.text, point));
     }
 }

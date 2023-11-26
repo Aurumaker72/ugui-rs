@@ -15,6 +15,14 @@ pub trait Styler {
         point: Point,
     ) -> Option<usize>;
     fn textbox(&mut self, control: Control, textbox: Textbox, scroll: Point);
+    fn textbox_get_content_size(&self, control: Control, textbox: Textbox) -> Point;
+    fn textbox_index_at_point(
+        &mut self,
+        control: Control,
+        textbox: Textbox,
+        scroll: Point,
+        point: Point,
+    ) -> Option<usize>;
 
     fn end(&mut self);
 }
