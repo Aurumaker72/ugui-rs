@@ -313,7 +313,7 @@ impl<'a> Styler for StandardStyler<'a> {
             let rect = Rect::new(
                 control.rect.x - x_offset,
                 control.rect.y + final_y,
-                content_size.x,
+                content_size.x.max(control.rect.w),
                 LISTBOX_ITEM_HEIGHT,
             )
             .inflate(-1.0);
