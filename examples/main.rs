@@ -33,9 +33,45 @@ pub fn main() -> Result<(), String> {
     let mut value = 0.0;
     let mut index = Some(0);
     let items = vec![
-        "Item A", "Item B", "Item C", "Item A", "Item B", "Item C", "Item A", "Item B", "Item C",
-        "Item A", "Item B", "Item C", "Item A", "Item B", "Item C", "Item A", "Item B", "Item C",
-        "Item A", "Item B", "Item C",
+        "Item A",
+        "Item B",
+        "Item C",
+        "Item A",
+        "Item B",
+        "Item C",
+        "Item A",
+        "Item B",
+        "Item C",
+        "Item A",
+        "Item B",
+        "Item C",
+        "Item A",
+        "TEST TEST TEST TEST TEST TEST TEST TEST TEST TEST",
+        "Item C",
+        "Item A",
+        "Item B",
+        "Item C",
+        "Item A",
+        "Item B",
+        "Item C",
+        "Item A",
+        "Item B",
+        "Item C",
+        "Item A",
+        "Item B",
+        "Item C",
+        "Item A",
+        "Item B",
+        "Item C",
+        "Item A",
+        "Item B",
+        "Item C",
+        "Item A",
+        "Item B",
+        "Item C",
+        "Item A",
+        "Item B",
+        "Item C",
     ];
 
     'running: loop {
@@ -74,7 +110,7 @@ pub fn main() -> Result<(), String> {
 
         index = ugui.listbox(
             Control {
-                uid: 1,
+                uid: 10,
                 enabled: true,
                 rect: geo::Rect::new(60.0, 80.0, 200.0, 350.0),
             },
@@ -86,9 +122,9 @@ pub fn main() -> Result<(), String> {
 
         value = ugui.scrollbar(
             Control {
-                uid: 2,
+                uid: 20,
                 enabled: true,
-                rect: geo::Rect::new(300.0, 80.0, 16.0, 350.0),
+                rect: geo::Rect::new(300.0, 80.0, 350.0, 16.0),
             },
             Scrollbar { value, ratio: 1.5 },
         );

@@ -122,34 +122,77 @@ impl<T: Styler> Ugui<T> {
         value
     }
     pub fn listbox(&mut self, mut control: Control, listbox: Listbox) -> Option<usize> {
-        let content_ratio = self.styler.listbox_get_content_ratio(control, listbox);
-        let mut scroll = 0.0f32;
+        let horizontal_scrollbar = Control {
+            uid: control.uid + 1,
+            enabled: control.enabled,
+            rect: Rect {
+                x: control.rect.x,
+                y: control.rect.bottom() - 16.0,
+                w: control.rect.w - 16.0,
+                h: 16.0,
+            },
+        };
 
-        if content_ratio > 1.0 {
-            control.rect.w -= 16.0;
+        let vertical_scrollbar = Control {
+            uid: control.uid + 2,
+            enabled: control.enabled,
+            rect: Rect {
+                x: control.rect.right() - 16.0,
+                y: control.rect.y,
+                w: 16.0,
+                h: control.rect.h,
+            },
+        };
 
-            let scrollbar_control = Control {
-                uid: control.uid + 1,
-                enabled: control.enabled,
-                rect: Rect {
-                    x: control.rect.right(),
-                    y: control.rect.y,
-                    w: 16.0,
-                    h: control.rect.h,
-                },
-            };
+        let horizontal_scrollbar_value = self
+            .get_control_data(horizontal_scrollbar.uid)
+            .scrollbar_value;
+        let vertical_scrollbar_value = self
+            .get_control_data(vertical_scrollbar.uid)
+            .scrollbar_value;
 
-            let scrollbar_control_data = self.get_control_data(scrollbar_control.uid);
+        let content_size = self.styler.listbox_get_content_size(
+            control,
+            listbox,
+            Point {
+                x: horizontal_scrollbar_value,
+                y: vertical_scrollbar_value,
+            },
+        );
 
+        let content_ratio = Point {
+            x: content_size.x / control.rect.w,
+            y: content_size.y / control.rect.h,
+        };
+
+        let mut scroll = Point::default();
+
+        // For horizontal overflow, shrink control bounds and place a horizontal scrollbar
+        if content_ratio.x > 1.0 {
+            control.rect.h -= 16.0;
             self.scrollbar(
-                scrollbar_control,
+                horizontal_scrollbar,
                 Scrollbar {
-                    value: scrollbar_control_data.scrollbar_value,
-                    ratio: self.styler.listbox_get_content_ratio(control, listbox),
+                    value: horizontal_scrollbar_value,
+                    ratio: content_ratio.x,
                 },
             );
 
-            scroll = scrollbar_control_data.scrollbar_value;
+            scroll.x = horizontal_scrollbar_value;
+        }
+
+        // For vertical overflow, shrink control bounds and place a vertical scrollbar
+        if content_ratio.y > 1.0 {
+            control.rect.w -= 16.0;
+            self.scrollbar(
+                vertical_scrollbar,
+                Scrollbar {
+                    value: vertical_scrollbar_value,
+                    ratio: content_ratio.y,
+                },
+            );
+
+            scroll.y = vertical_scrollbar_value;
         }
 
         let pushed = self.process_push(control);
@@ -164,7 +207,7 @@ impl<T: Styler> Ugui<T> {
             index = self.styler.listbox_index_at_point(
                 control,
                 listbox,
-                Point { x: 0.0, y: scroll },
+                scroll,
                 self.persistent_state
                     .current_input
                     .mouse_position
@@ -172,8 +215,7 @@ impl<T: Styler> Ugui<T> {
             );
         }
 
-        self.styler
-            .listbox(control, listbox, Point { x: 0.0, y: scroll });
+        self.styler.listbox(control, listbox, scroll);
 
         index
     }

@@ -5,7 +5,7 @@ pub trait Styler {
     fn button(&mut self, control: Control, button: Button);
     fn scrollbar(&mut self, control: Control, scrollbar: Scrollbar);
     fn listbox(&mut self, control: Control, listbox: Listbox, scroll: Point);
-    fn listbox_get_content_ratio(&self, control: Control, listbox: Listbox) -> f32;
+    fn listbox_get_content_size(&self, control: Control, listbox: Listbox, scroll: Point) -> Point;
     fn listbox_index_at_point(
         &mut self,
         control: Control,

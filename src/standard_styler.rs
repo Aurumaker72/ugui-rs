@@ -6,6 +6,7 @@ use crate::PersistentState;
 
 use sdl2::pixels::Color;
 
+use sdl2::libc::popen;
 use sdl2::rect::Rect as SdlRect;
 use sdl2::render::WindowCanvas;
 use sdl2::ttf::{Font, Sdl2TtfContext};
@@ -189,6 +190,26 @@ impl<'a> StandardStyler<'a> {
             }
         }
     }
+
+    fn get_visible_range(
+        &self,
+        control: Control,
+        listbox: Listbox,
+        scroll: Point,
+    ) -> (usize, usize) {
+        let content_height = listbox.items.len() as f32 * LISTBOX_ITEM_HEIGHT;
+
+        let mut index_begin =
+            ((scroll.y * (content_height - control.rect.h)) / LISTBOX_ITEM_HEIGHT) as usize;
+        let mut index_end = ((control.rect.h + (scroll.y * (content_height - control.rect.h)))
+            / LISTBOX_ITEM_HEIGHT) as usize
+            + 1;
+
+        return (
+            index_begin.clamp(0, listbox.items.len()),
+            index_end.clamp(0, listbox.items.len()),
+        );
+    }
 }
 
 impl<'a> Styler for StandardStyler<'a> {
@@ -278,23 +299,20 @@ impl<'a> Styler for StandardStyler<'a> {
         self.canvas
             .set_clip_rect(control.rect.inflate(-1.0).to_sdl());
 
-        let content_height = listbox.items.len() as f32 * LISTBOX_ITEM_HEIGHT;
+        let visible_range = self.get_visible_range(control, listbox, scroll);
+        let content_size = self.listbox_get_content_size(control, listbox, scroll);
 
-        let index_begin =
-            (((scroll.y * (content_height - control.rect.h)) / LISTBOX_ITEM_HEIGHT) as i32).max(0);
-        let index_end = (((control.rect.h + (scroll.y * (content_height - control.rect.h)))
-            / LISTBOX_ITEM_HEIGHT) as i32)
-            .min(listbox.items.len() as i32);
+        let x_offset = ((content_size.x - control.rect.w) * scroll.x).max(0.0);
 
-        for i in index_begin as usize..index_end as usize {
+        for i in visible_range.0..visible_range.1 {
             let base_y = LISTBOX_ITEM_HEIGHT * i as f32;
-            let moved_y = scroll.y * (content_height - control.rect.h);
+            let moved_y = scroll.y * (content_size.y - control.rect.h);
             let final_y = base_y - moved_y;
 
             let rect = Rect::new(
-                control.rect.x,
+                control.rect.x - x_offset,
                 control.rect.y + final_y,
-                control.rect.w,
+                content_size.x,
                 LISTBOX_ITEM_HEIGHT,
             )
             .inflate(-1.0);
@@ -319,10 +337,9 @@ impl<'a> Styler for StandardStyler<'a> {
         if listbox.items.is_empty() {
             return listbox.index;
         }
+        let content_size = self.listbox_get_content_size(control, listbox, scroll);
 
-        let content_height = listbox.items.len() as f32 * LISTBOX_ITEM_HEIGHT;
-
-        let index = (((point.y + (scroll.y * (content_height - control.rect.h)))
+        let index = (((point.y + (scroll.y * (content_size.y - control.rect.h)))
             / LISTBOX_ITEM_HEIGHT)
             .ceil()
             - 1.0) as usize;
@@ -330,9 +347,20 @@ impl<'a> Styler for StandardStyler<'a> {
         Some(index.clamp(0, listbox.items.len() - 1))
     }
 
-    fn listbox_get_content_ratio(&self, control: Control, listbox: Listbox) -> f32 {
-        let content_height = listbox.items.len() as f32 * LISTBOX_ITEM_HEIGHT;
+    fn listbox_get_content_size(&self, control: Control, listbox: Listbox, scroll: Point) -> Point {
+        let visible_range = self.get_visible_range(control, listbox, scroll);
 
-        return content_height / control.rect.h;
+        // Width is measured by getting max width of all visible items
+        let (index_begin, index_end) = visible_range;
+        let visible_items = &listbox.items[index_begin..index_end];
+        let item_widths = visible_items
+            .iter()
+            .map(|x| self.font.size_of(x).unwrap().0);
+
+        return Point {
+            // We add the padding back in because it's off otherwise
+            x: item_widths.max().unwrap() as f32 + LISTBOX_ITEM_PADDING,
+            y: listbox.items.len() as f32 * LISTBOX_ITEM_HEIGHT,
+        };
     }
 }
