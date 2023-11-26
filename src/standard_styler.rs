@@ -136,13 +136,12 @@ impl<'a> StandardStyler<'a> {
         let mut back_color = Color::WHITE;
         let mut text_color = Color::BLACK;
 
+        if !enabled {
+            text_color = Color::RGB(160, 160, 160);
+        }
         if selected {
             back_color = Color::RGB(0, 120, 215);
             text_color = Color::WHITE;
-        }
-        if !enabled {
-            back_color = Color::RGB(204, 204, 204);
-            text_color = Color::RGB(160, 160, 160);
         }
 
         self.canvas.set_draw_color(back_color);
