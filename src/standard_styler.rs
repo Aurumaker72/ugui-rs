@@ -3,25 +3,24 @@ use crate::geo::{remap, Point, Rect};
 use crate::standard_styler::VisualState::{Active, Disabled, Hover, Normal};
 use crate::styler::Styler;
 use crate::PersistentState;
-use std::cmp;
-use std::cmp::max;
-
 use sdl2::pixels::Color;
-
-use sdl2::libc::popen;
 use sdl2::rect::Rect as SdlRect;
 use sdl2::render::WindowCanvas;
 use sdl2::ttf::{Font, Sdl2TtfContext};
+use std::collections::HashMap;
 use std::path::Path;
 
-pub struct StandardStyler<'a> {
-    canvas: WindowCanvas,
-    _ttf_context: &'a Sdl2TtfContext,
-    font: Font<'a, 'static>,
-    persistent_state: PersistentState,
+fn hex(str: &str) -> Color {
+    let r = &str[1..3];
+    let g = &str[3..5];
+    let b = &str[5..7];
+    Color::RGB(
+        u8::from_str_radix(r, 16).unwrap(),
+        u8::from_str_radix(g, 16).unwrap(),
+        u8::from_str_radix(b, 16).unwrap(),
+    )
 }
-
-#[derive(Eq, PartialEq)]
+#[derive(Eq, PartialEq, Hash, Debug)]
 enum VisualState {
     Normal,
     Hover,
@@ -29,7 +28,7 @@ enum VisualState {
     Disabled,
 }
 
-#[derive(Eq, PartialEq)]
+#[derive(Eq, PartialEq, Hash, Debug)]
 enum Alignment {
     Start,
     Center,
@@ -38,17 +37,112 @@ enum Alignment {
 const LISTBOX_ITEM_PADDING: f32 = 4.0;
 const LISTBOX_ITEM_HEIGHT: f32 = 20.0;
 
+pub struct StandardStyler<'a> {
+    canvas: WindowCanvas,
+    _ttf_context: &'a Sdl2TtfContext,
+    font: Font<'a, 'static>,
+    persistent_state: PersistentState,
+    button_back_colors: HashMap<VisualState, Color>,
+    button_border_colors: HashMap<VisualState, Color>,
+    button_text_colors: HashMap<VisualState, Color>,
+    listbox_back_colors: HashMap<VisualState, Color>,
+    listbox_border_colors: HashMap<VisualState, Color>,
+    listbox_item_back_colors: HashMap<VisualState, Color>,
+    listbox_item_text_colors: HashMap<VisualState, Color>,
+    textbox_back_colors: HashMap<VisualState, Color>,
+    textbox_border_colors: HashMap<VisualState, Color>,
+    scrollbar_back_colors: HashMap<VisualState, Color>,
+    scrollbar_thumb_colors: HashMap<VisualState, Color>,
+}
+
 impl<'a> StandardStyler<'a> {
     pub fn new(canvas: WindowCanvas, ttf_context: &'a Sdl2TtfContext) -> Self {
         let font = ttf_context
             .load_font(Path::new("examples/fonts/segoe.ttf"), 12)
             .unwrap();
 
+        let mut button_back_colors = HashMap::new();
+        button_back_colors.insert(Normal, hex("#E1E1E1"));
+        button_back_colors.insert(Hover, hex("#E5F1FB"));
+        button_back_colors.insert(Active, hex("#CCE4F7"));
+        button_back_colors.insert(Disabled, hex("#CCCCCC"));
+
+        let mut button_border_colors = HashMap::new();
+        button_border_colors.insert(Normal, hex("#ADADAD"));
+        button_border_colors.insert(Hover, hex("#0078D7"));
+        button_border_colors.insert(Active, hex("#005499"));
+        button_border_colors.insert(Disabled, hex("#BFBFBF"));
+
+        let mut button_text_colors = HashMap::new();
+        button_text_colors.insert(Normal, hex("#000000"));
+        button_text_colors.insert(Hover, hex("#000000"));
+        button_text_colors.insert(Active, hex("#000000"));
+        button_text_colors.insert(Disabled, hex("#A0A0A0"));
+
+        let mut listbox_back_colors = HashMap::new();
+        listbox_back_colors.insert(Normal, hex("#FFFFFF"));
+        listbox_back_colors.insert(Hover, hex("#FFFFFF"));
+        listbox_back_colors.insert(Active, hex("#FFFFFF"));
+        listbox_back_colors.insert(Disabled, hex("#FFFFFF"));
+
+        let mut listbox_border_colors = HashMap::new();
+        listbox_border_colors.insert(Normal, hex("#7A7A7A"));
+        listbox_border_colors.insert(Hover, hex("#7A7A7A"));
+        listbox_border_colors.insert(Active, hex("#7A7A7A"));
+        listbox_border_colors.insert(Disabled, hex("#7A7A7A"));
+
+        let mut listbox_item_back_colors = HashMap::new();
+        listbox_item_back_colors.insert(Normal, hex("#FFFFFF"));
+        listbox_item_back_colors.insert(Hover, hex("#FFFFFF"));
+        listbox_item_back_colors.insert(Active, hex("#0078D7"));
+        listbox_item_back_colors.insert(Disabled, hex("#FFFFFF"));
+
+        let mut listbox_item_text_colors = HashMap::new();
+        listbox_item_text_colors.insert(Normal, hex("#000000"));
+        listbox_item_text_colors.insert(Hover, hex("#000000"));
+        listbox_item_text_colors.insert(Active, hex("#FFFFFF"));
+        listbox_item_text_colors.insert(Disabled, hex("#A0A0A0"));
+
+        let mut textbox_back_colors = HashMap::new();
+        textbox_back_colors.insert(Normal, hex("#FFFFFF"));
+        textbox_back_colors.insert(Hover, hex("#FFFFFF"));
+        textbox_back_colors.insert(Active, hex("#FFFFFF"));
+        textbox_back_colors.insert(Disabled, hex("#FFFFFF"));
+
+        let mut textbox_border_colors = HashMap::new();
+        textbox_border_colors.insert(Normal, hex("#7A7A7A"));
+        textbox_border_colors.insert(Hover, hex("#171717"));
+        textbox_border_colors.insert(Active, hex("#0078D7"));
+        textbox_border_colors.insert(Disabled, hex("#CCCCCC"));
+
+        let mut scrollbar_back_colors = HashMap::new();
+        scrollbar_back_colors.insert(Normal, hex("#F0F0F0"));
+        scrollbar_back_colors.insert(Hover, hex("#F0F0F0"));
+        scrollbar_back_colors.insert(Active, hex("#F0F0F0"));
+        scrollbar_back_colors.insert(Disabled, hex("#F0F0F0"));
+
+        let mut scrollbar_thumb_colors = HashMap::new();
+        scrollbar_thumb_colors.insert(Normal, hex("#CDCDCD"));
+        scrollbar_thumb_colors.insert(Hover, hex("#A6A6A6"));
+        scrollbar_thumb_colors.insert(Active, hex("#606060"));
+        scrollbar_thumb_colors.insert(Disabled, hex("#C0C0C0"));
+
         Self {
             persistent_state: Default::default(),
             canvas,
             _ttf_context: ttf_context,
             font,
+            button_back_colors,
+            button_border_colors,
+            button_text_colors,
+            listbox_back_colors,
+            listbox_border_colors,
+            listbox_item_back_colors,
+            listbox_item_text_colors,
+            textbox_back_colors,
+            textbox_border_colors,
+            scrollbar_back_colors,
+            scrollbar_thumb_colors,
         }
     }
 
@@ -133,16 +227,24 @@ impl<'a> StandardStyler<'a> {
     }
 
     fn listbox_item(&mut self, item: &str, enabled: bool, selected: bool, rect: Rect) {
-        let mut back_color = Color::WHITE;
-        let mut text_color = Color::BLACK;
-
+        let mut visual_state = Normal;
         if !enabled {
-            text_color = Color::RGB(160, 160, 160);
+            visual_state = Disabled;
         }
         if selected {
-            back_color = Color::RGB(0, 120, 215);
-            text_color = Color::WHITE;
+            visual_state = Active;
         }
+
+        let back_color = self
+            .listbox_item_back_colors
+            .get(&visual_state)
+            .unwrap()
+            .clone();
+        let text_color = self
+            .listbox_item_text_colors
+            .get(&visual_state)
+            .unwrap()
+            .clone();
 
         self.canvas.set_draw_color(back_color);
         self.canvas.fill_rect(rect.to_sdl()).unwrap();
@@ -224,25 +326,14 @@ impl<'a> Styler for StandardStyler<'a> {
     }
 
     fn button(&mut self, control: Control, button: Button) {
-        let mut back_color = Color::BLACK;
-        let mut border_color = Color::BLACK;
-        let mut text_color = Color::BLACK;
         let visual_state = self.get_visual_state(control);
-
-        if visual_state == Normal {
-            back_color = Color::RGB(225, 225, 225);
-            border_color = Color::RGB(173, 173, 173);
-        } else if visual_state == Hover {
-            back_color = Color::RGB(229, 241, 251);
-            border_color = Color::RGB(0, 120, 215);
-        } else if visual_state == Active {
-            back_color = Color::RGB(204, 228, 247);
-            border_color = Color::RGB(0, 84, 153);
-        } else if visual_state == Disabled {
-            back_color = Color::RGB(204, 204, 204);
-            border_color = Color::RGB(191, 191, 191);
-            text_color = Color::RGB(160, 160, 160);
-        }
+        let back_color = self.button_back_colors.get(&visual_state).unwrap().clone();
+        let border_color = self
+            .button_border_colors
+            .get(&visual_state)
+            .unwrap()
+            .clone();
+        let text_color = self.button_text_colors.get(&visual_state).unwrap().clone();
 
         self.canvas.set_draw_color(border_color);
         self.canvas.fill_rect(control.rect.to_sdl()).unwrap();
@@ -260,8 +351,6 @@ impl<'a> Styler for StandardStyler<'a> {
     }
 
     fn scrollbar(&mut self, control: Control, scrollbar: Scrollbar) {
-        let back_color = Color::RGB(240, 240, 240);
-        let mut thumb_color = Color::RGB(205, 205, 205);
         let thumb_rect = StandardStyler::scrollbar_get_thumb(control, scrollbar);
 
         // We need visual state of thumb, not scrollbar, since thats the interactable part
@@ -270,13 +359,16 @@ impl<'a> Styler for StandardStyler<'a> {
             ..control
         });
 
-        if visual_state == Hover {
-            thumb_color = Color::RGB(166, 166, 166);
-        } else if visual_state == Active {
-            thumb_color = Color::RGB(96, 96, 96);
-        } else if visual_state == Disabled {
-            thumb_color = Color::RGB(192, 192, 192);
-        }
+        let back_color = self
+            .scrollbar_back_colors
+            .get(&visual_state)
+            .unwrap()
+            .clone();
+        let thumb_color = self
+            .scrollbar_thumb_colors
+            .get(&visual_state)
+            .unwrap()
+            .clone();
 
         self.canvas.set_draw_color(back_color);
         self.canvas.fill_rect(control.rect.to_sdl()).unwrap();
@@ -286,8 +378,13 @@ impl<'a> Styler for StandardStyler<'a> {
     }
 
     fn listbox(&mut self, control: Control, listbox: Listbox, scroll: Point) {
-        let back_color = Color::RGB(255, 255, 255);
-        let border_color = Color::RGB(130, 135, 144);
+        let visual_state = self.get_visual_state(control);
+        let back_color = self.listbox_back_colors.get(&visual_state).unwrap().clone();
+        let border_color = self
+            .listbox_border_colors
+            .get(&visual_state)
+            .unwrap()
+            .clone();
 
         self.canvas.set_draw_color(border_color);
         self.canvas.fill_rect(control.rect.to_sdl()).unwrap();
