@@ -36,6 +36,7 @@ enum Alignment {
 }
 const LISTBOX_ITEM_PADDING: f32 = 4.0;
 const LISTBOX_ITEM_HEIGHT: f32 = 20.0;
+const TEXTBOX_PADDING: f32 = 2.0;
 const FONT_SIZE: f32 = 12.0;
 const LINE_HEIGHT: f32 = 16.0;
 
@@ -551,9 +552,11 @@ impl<'a> Styler for StandardStyler<'a> {
 
         self.quad(control.rect, back_color, border_color);
 
+        let content_rect = control.rect.inflate(-TEXTBOX_PADDING);
+
         self.draw_text(
             textbox.text,
-            control.rect,
+            content_rect,
             text_color,
             Alignment::Start,
             Alignment::Center,
@@ -563,7 +566,7 @@ impl<'a> Styler for StandardStyler<'a> {
         if let Some(control_state) = self.persistent_state.control_state.get(&control.uid) {
             let caret_position = self
                 .position_in_multiline_string(textbox.text, control_state.textbox_caret)
-                .add(control.rect.top_left());
+                .add(content_rect.top_left());
 
             self.canvas.set_draw_color(Color::BLACK);
             self.canvas.draw_line(
@@ -589,6 +592,9 @@ impl<'a> Styler for StandardStyler<'a> {
         scroll: Point,
         point: Point,
     ) -> Option<usize> {
-        return Some(self.index_in_string(textbox.text, point.sub(control.rect.top_left())));
+        return Some(self.index_in_string(
+            textbox.text,
+            point.sub(control.rect.inflate(-TEXTBOX_PADDING).top_left()),
+        ));
     }
 }
