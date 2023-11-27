@@ -25,7 +25,17 @@ pub struct PersistentState {
     current_input: Input,
     last_input: Input,
     mouse_down_position: Point,
+    clear_active_control_after_mouse_up: bool,
     control_state: HashMap<i64, PersistentControlState>,
+}
+
+impl PersistentState {
+    pub fn new() -> PersistentState {
+        return PersistentState {
+            clear_active_control_after_mouse_up: true,
+            ..Default::default()
+        };
+    }
 }
 
 pub struct Ugui<T: Styler> {
@@ -69,6 +79,7 @@ impl<T: Styler> Ugui<T> {
                 .inside(control.rect)
         {
             self.persistent_state.active_control = Some(control.uid);
+            self.persistent_state.clear_active_control_after_mouse_up = true;
             return true;
         }
 
@@ -286,11 +297,33 @@ impl<T: Styler> Ugui<T> {
         let pushed = self.process_push(control);
         let mut text = textbox.text;
 
-        if pushed
+        // Since this is a textbox, we shouldn't clear the active control after releasing the mouse
+        // The active control will be cleared manually in the next step
+        if pushed {
+            self.persistent_state.clear_active_control_after_mouse_up = false;
+        }
+
+        if self
+            .persistent_state
+            .active_control
+            .is_some_and(|x| x == control.uid)
+            && !self
+                .persistent_state
+                .current_input
+                .mouse_position
+                .inside(control.rect)
+            && (self.persistent_state.current_input.primary_down
+                && !self.persistent_state.last_input.primary_down)
+        {
+            self.persistent_state.active_control = None;
+        }
+
+        if (pushed
             || self
                 .persistent_state
                 .active_control
-                .is_some_and(|x| x == control.uid)
+                .is_some_and(|x| x == control.uid))
+            && self.persistent_state.current_input.primary_down
         {
             let index = self.styler.textbox_index_at_point(
                 control,
@@ -302,15 +335,6 @@ impl<T: Styler> Ugui<T> {
                 textbox_caret: index.unwrap(),
                 ..x
             });
-            // index = self.styler.listbox_index_at_point(
-            //     control,
-            //     listbox,
-            //     scroll,
-            //     self.persistent_state
-            //         .current_input
-            //         .mouse_position
-            //         .sub(control.rect.top_left()),
-            // );
         }
 
         self.styler.textbox(control, textbox, scroll);
@@ -338,6 +362,7 @@ impl<T: Styler> Ugui<T> {
         // As soon as we let go of the primary mouse button, the active control should be cleared
         if self.persistent_state.active_control.is_some()
             && !self.persistent_state.current_input.primary_down
+            && self.persistent_state.clear_active_control_after_mouse_up
         {
             self.persistent_state.active_control = None;
         }

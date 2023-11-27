@@ -27,7 +27,7 @@ pub fn main() -> Result<(), String> {
 
     let mut ugui = Ugui {
         styler: StandardStyler::new(canvas, &ttf_context),
-        persistent_state: Default::default(),
+        persistent_state: PersistentState::new(),
     };
 
     let mut mouse_wheel = 0;

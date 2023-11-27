@@ -559,7 +559,7 @@ impl<'a> Styler for StandardStyler<'a> {
         let back_color = self.textbox_back_colors.get(&visual_state).unwrap().clone();
         let text_color = self.textbox_text_colors.get(&visual_state).unwrap().clone();
         let border_color = self
-            .listbox_border_colors
+            .textbox_border_colors
             .get(&visual_state)
             .unwrap()
             .clone();
