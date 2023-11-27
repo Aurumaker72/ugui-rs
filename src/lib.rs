@@ -298,7 +298,10 @@ impl<T: Styler> Ugui<T> {
                 scroll,
                 self.persistent_state.current_input.mouse_position,
             );
-            println!("{}", index.unwrap());
+            self.update_control_data(control.uid, |x| PersistentControlState {
+                textbox_caret: index.unwrap(),
+                ..x
+            });
             // index = self.styler.listbox_index_at_point(
             //     control,
             //     listbox,

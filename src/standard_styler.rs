@@ -37,6 +37,7 @@ enum Alignment {
 const LISTBOX_ITEM_PADDING: f32 = 4.0;
 const LISTBOX_ITEM_HEIGHT: f32 = 20.0;
 const FONT_SIZE: f32 = 12.0;
+const LINE_HEIGHT: f32 = 16.0;
 
 pub struct StandardStyler<'a> {
     canvas: WindowCanvas,
@@ -162,33 +163,86 @@ impl<'a> StandardStyler<'a> {
         self.canvas.fill_rect(rect.inflate(-1.0).to_sdl()).unwrap();
     }
 
-    fn index_in_string(&mut self, text: &str, point: Point) -> usize {
-        let mut lowest_distance = f32::MAX;
-        let mut lowest_index = 0usize;
-        let mut current_y = 0.0;
-
-        return lowest_index;
-        for (i, c) in text.chars().enumerate() {
-            if c == '\n' {
-                current_y += FONT_SIZE;
-                continue;
-            }
-            let slice = &text[0..i];
-            let text_size = self.font.size_of(slice).unwrap();
-
-            let dist_x = (text_size.0 as f32 - point.x).abs();
-            let dist_y = (current_y - point.y).abs();
-
-            let dist = (dist_x.powi(2) + dist_y.powi(2)).sqrt();
-
-            if dist < lowest_distance {
-                lowest_distance = dist;
-                lowest_index = i;
+    fn index_in_singleline_string(&mut self, text: &str, x: f32) -> usize {
+        let mut positions: Vec<f32> = Vec::new();
+        for j in 0..text.len() {
+            positions.push(self.font.size_of(&text[0..j]).unwrap().0 as f32);
+        }
+        for j in (0..positions.len()).rev() {
+            if x > positions[j] {
+                return j.clamp(0, positions.len() + 1);
             }
         }
-
-        lowest_index
+        0
     }
+
+    fn get_multiline_string_positions(&mut self, text: &str) -> Vec<(usize, Point)> {
+        let mut positions: Vec<(usize, Point)> = Vec::new();
+        let mut char_count = 0;
+        let lines = text.split("\n").collect::<Vec<&str>>();
+        for i in 0..lines.len() {
+            let mut line = lines[i].replace("\n", "");
+
+            // SDL freaks out when performing operations on 0-width strings
+            if line.len() == 0 {
+                line = " ".to_string();
+            }
+
+            // Compute bounds of current line
+            let size = self.font.size_of(&line).unwrap();
+            let text_size = Point {
+                x: size.0 as f32,
+                y: size.1 as f32,
+            };
+            let line_rect = Rect {
+                x: 0.0,
+                y: LINE_HEIGHT * i as f32,
+                w: text_size.x,
+                h: LINE_HEIGHT,
+            };
+
+            for j in 0..line.len() {
+                positions.push((
+                    char_count,
+                    Point {
+                        x: self.font.size_of(&line[0..j]).unwrap().0 as f32,
+                        y: line_rect.y,
+                    },
+                ));
+                char_count += 1;
+            }
+        }
+        return positions;
+    }
+
+    fn index_in_multiline_string(&mut self, text: &str, point: Point) -> usize {
+        let positions = self.get_multiline_string_positions(text);
+
+        let closest_match = positions
+            .iter()
+            .min_by(|x, y| x.1.dist(point).total_cmp(&y.1.dist(point)));
+        positions.iter().for_each(|pt| {
+            self.quad(
+                Rect {
+                    x: pt.1.x,
+                    y: pt.1.y,
+                    w: 5.0,
+                    h: 5.0,
+                },
+                Color::RED,
+                Color::RED,
+            );
+        });
+
+        closest_match.unwrap().0
+    }
+
+    fn position_in_multiline_string(&mut self, text: &str, index: usize) -> Point {
+        let positions = self.get_multiline_string_positions(text);
+
+        return positions.iter().find(|x| x.0 == index).unwrap().1;
+    }
+
     fn draw_text(
         &mut self,
         text: &str,
@@ -204,7 +258,7 @@ impl<'a> StandardStyler<'a> {
         for i in 0..lines.len() {
             let line = lines[i];
 
-            // SDL freaks out when rendering 0-width strings
+            // SDL freaks out when performing operations on 0-width strings
             if line.replace("\n", "").len() == 0 {
                 continue;
             }
@@ -228,9 +282,9 @@ impl<'a> StandardStyler<'a> {
             };
             let mut line_rect = Rect {
                 x: rect.x,
-                y: rect.y + (i as f32 * FONT_SIZE),
+                y: rect.y + (i as f32 * LINE_HEIGHT),
                 w: rect.w,
-                h: FONT_SIZE,
+                h: LINE_HEIGHT,
             };
             if lines.len() == 1 {
                 // Single-line string: line rect is just the regular rect
@@ -529,16 +583,28 @@ impl<'a> Styler for StandardStyler<'a> {
         for i in 0..lines.len() {
             let rect = Rect {
                 x: control.rect.x,
-                y: control.rect.y + (i as f32 * FONT_SIZE),
+                y: control.rect.y + (i as f32 * LINE_HEIGHT),
                 w: control.rect.w,
-                h: FONT_SIZE,
+                h: LINE_HEIGHT,
             };
-            self.draw_text(
-                lines[i],
-                rect,
-                text_color,
-                Alignment::Start,
-                Alignment::Center,
+            self.draw_text(lines[i], rect, text_color, Alignment::Start, Alignment::End);
+        }
+
+        // Now we draw the caret overlay + selection
+        if let Some(control_state) = self.persistent_state.control_state.get(&control.uid) {
+            let caret_position =
+                self.position_in_multiline_string(textbox.text, control_state.textbox_caret);
+
+            self.quad(
+                Rect {
+                    x: caret_position.x,
+                    y: caret_position.y,
+                    w: 5.0,
+                    h: 5.0,
+                }
+                .add_pt(control.rect.top_left()),
+                Color::BLACK,
+                Color::RED,
             );
         }
     }
@@ -554,6 +620,8 @@ impl<'a> Styler for StandardStyler<'a> {
         scroll: Point,
         point: Point,
     ) -> Option<usize> {
-        return Some(self.index_in_string(textbox.text, point));
+        return Some(
+            self.index_in_multiline_string(textbox.text, point.sub(control.rect.top_left())),
+        );
     }
 }

@@ -22,6 +22,9 @@ impl Point {
             y: self.y - other.y,
         }
     }
+    pub fn dist(&self, other: Point) -> f32 {
+        ((other.x - self.x).powf(2.0) + (other.y - self.y).powf(2.0)).sqrt()
+    }
 }
 
 #[derive(Clone, Copy, Default)]
