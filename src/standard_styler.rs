@@ -163,19 +163,6 @@ impl<'a> StandardStyler<'a> {
         self.canvas.fill_rect(rect.inflate(-1.0).to_sdl()).unwrap();
     }
 
-    fn index_in_singleline_string(&mut self, text: &str, x: f32) -> usize {
-        let mut positions: Vec<f32> = Vec::new();
-        for j in 0..text.len() {
-            positions.push(self.font.size_of(&text[0..j]).unwrap().0 as f32);
-        }
-        for j in (0..positions.len()).rev() {
-            if x > positions[j] {
-                return j.clamp(0, positions.len() + 1);
-            }
-        }
-        0
-    }
-
     fn get_multiline_string_positions(&mut self, text: &str) -> Vec<(usize, Point)> {
         let mut positions: Vec<(usize, Point)> = Vec::new();
         let mut char_count = 0;
@@ -183,10 +170,8 @@ impl<'a> StandardStyler<'a> {
         for i in 0..lines.len() {
             let mut line = lines[i].replace("\n", "");
 
-            // SDL freaks out when performing operations on 0-width strings
-            if line.len() == 0 {
-                line = " ".to_string();
-            }
+            // Since line endings are now empty, we need to add a space back in to allow for measurement
+            line += " ";
 
             // Compute bounds of current line
             let size = self.font.size_of(&line).unwrap();
@@ -215,7 +200,7 @@ impl<'a> StandardStyler<'a> {
         return positions;
     }
 
-    fn index_in_multiline_string(&mut self, text: &str, point: Point) -> usize {
+    fn index_in_string(&mut self, text: &str, point: Point) -> usize {
         let positions = self.get_multiline_string_positions(text);
 
         let closest_match = positions
@@ -604,8 +589,6 @@ impl<'a> Styler for StandardStyler<'a> {
         scroll: Point,
         point: Point,
     ) -> Option<usize> {
-        return Some(
-            self.index_in_multiline_string(textbox.text, point.sub(control.rect.top_left())),
-        );
+        return Some(self.index_in_string(textbox.text, point.sub(control.rect.top_left())));
     }
 }
