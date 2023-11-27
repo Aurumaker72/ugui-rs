@@ -221,18 +221,6 @@ impl<'a> StandardStyler<'a> {
         let closest_match = positions
             .iter()
             .min_by(|x, y| x.1.dist(point).total_cmp(&y.1.dist(point)));
-        positions.iter().for_each(|pt| {
-            self.quad(
-                Rect {
-                    x: pt.1.x,
-                    y: pt.1.y,
-                    w: 5.0,
-                    h: 5.0,
-                },
-                Color::RED,
-                Color::RED,
-            );
-        });
 
         closest_match.unwrap().0
     }
@@ -256,16 +244,16 @@ impl<'a> StandardStyler<'a> {
         let lines = text.split("\n").collect::<Vec<&str>>();
 
         for i in 0..lines.len() {
-            let line = lines[i];
+            let mut line = lines[i].replace("\n", "");
 
             // SDL freaks out when performing operations on 0-width strings
-            if line.replace("\n", "").len() == 0 {
-                continue;
+            if line.len() == 0 {
+                line = " ".to_string();
             }
 
             let surface = self
                 .font
-                .render(line)
+                .render(&line)
                 .blended(color)
                 .map_err(|e| e.to_string())
                 .unwrap();
@@ -275,7 +263,7 @@ impl<'a> StandardStyler<'a> {
                 .map_err(|e| e.to_string())
                 .unwrap();
 
-            let size = self.font.size_of(text).unwrap();
+            let size = self.font.size_of(&line).unwrap();
             let text_size = Point {
                 x: size.0 as f32,
                 y: size.1 as f32,
@@ -578,33 +566,29 @@ impl<'a> Styler for StandardStyler<'a> {
 
         self.quad(control.rect, back_color, border_color);
 
-        let lines = textbox.text.split("\n").collect::<Vec<&str>>();
-
-        for i in 0..lines.len() {
-            let rect = Rect {
-                x: control.rect.x,
-                y: control.rect.y + (i as f32 * LINE_HEIGHT),
-                w: control.rect.w,
-                h: LINE_HEIGHT,
-            };
-            self.draw_text(lines[i], rect, text_color, Alignment::Start, Alignment::End);
-        }
+        self.draw_text(
+            textbox.text,
+            control.rect,
+            text_color,
+            Alignment::Start,
+            Alignment::Center,
+        );
 
         // Now we draw the caret overlay + selection
         if let Some(control_state) = self.persistent_state.control_state.get(&control.uid) {
-            let caret_position =
-                self.position_in_multiline_string(textbox.text, control_state.textbox_caret);
+            let caret_position = self
+                .position_in_multiline_string(textbox.text, control_state.textbox_caret)
+                .add(control.rect.top_left());
 
-            self.quad(
-                Rect {
-                    x: caret_position.x,
-                    y: caret_position.y,
-                    w: 5.0,
-                    h: 5.0,
-                }
-                .add_pt(control.rect.top_left()),
-                Color::BLACK,
-                Color::RED,
+            self.canvas.set_draw_color(Color::BLACK);
+            self.canvas.draw_line(
+                caret_position.to_sdl(),
+                caret_position
+                    .add(Point {
+                        x: 0.0,
+                        y: LINE_HEIGHT,
+                    })
+                    .to_sdl(),
             );
         }
     }
