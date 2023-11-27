@@ -1,3 +1,4 @@
+use sdl2::rect::Point as SdlPoint;
 use sdl2::rect::Rect as SdlRect;
 
 #[derive(Clone, Copy, Debug, Default)]
@@ -7,6 +8,9 @@ pub struct Point {
 }
 
 impl Point {
+    pub fn to_sdl(&self) -> SdlPoint {
+        SdlPoint::new(self.x as i32, self.y as i32)
+    }
     pub fn inside(&self, rect: Rect) -> bool {
         self.x > rect.x && self.x < rect.right() && self.y > rect.y && self.y < rect.bottom()
     }
